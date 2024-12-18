@@ -1,0 +1,25 @@
+.
+|-- cmd
+|   `-- server
+|       `-- main.go
+|-- go.mod
+|-- go.sum
+|-- internal
+|   |-- auth
+|   |   `-- github_auth.go
+|   |-- fetcher
+|   |   `-- readme_fetcher.go
+|   |-- handler
+|   |   `-- readme_handler.go
+|   |-- middleware
+|   |   `-- middleware.go
+|   `-- parser
+|       |-- html_parser.go
+|       |-- markdown_parser.go
+|       `-- parser.go
+|-- pkg
+|   `-- models
+|       `-- models.go
+`-- project-structure.txt
+
+11 directories, 12 files
