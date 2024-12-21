@@ -54,12 +54,13 @@ func preprocessMarkdown(input string) string {
 	input = strings.ReplaceAll(input, "\r\n", "\n")
 
 	// Regex for detecting list items with various formatting
-	listItemRegex := regexp.MustCompile(`^([ \t]*)([-*]|\d+\.)\s*(.*)$`)
+	listItemRegex := regexp.MustCompile(`^([ \t]*)([-*]|\d+\.)\s+(.*)$`)
 
 	// Split input into lines
 	lines := strings.Split(input, "\n")
 	var processedLines []string
 	var inListBlock bool
+	var lastIndent string
 
 	for _, line := range lines {
 		matches := listItemRegex.FindStringSubmatch(line)
@@ -71,8 +72,9 @@ func preprocessMarkdown(input string) string {
 			content := matches[3]
 
 			// Ensure we start a list block if not already in one
-			if !inListBlock {
+			if !inListBlock || indent != lastIndent {
 				inListBlock = true
+				lastIndent = indent
 				// Add an empty line before the list to ensure proper list parsing
 				processedLines = append(processedLines, "")
 			}
@@ -85,6 +87,7 @@ func preprocessMarkdown(input string) string {
 				// If we were in a list block and this is not an empty line,
 				// it means the list has ended
 				inListBlock = false
+				lastIndent = ""
 				// Add an empty line to separate lists
 				processedLines = append(processedLines, "")
 			}
