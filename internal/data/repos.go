@@ -1,4 +1,3 @@
-// internal/data/repos.go
 package data
 
 type RepoInfo struct {
@@ -7,6 +6,10 @@ type RepoInfo struct {
 }
 
 var ReposList = map[string]RepoInfo{
+	"Demo Template": {
+		Path:        "proSamik/demo-template",
+		Description: "A demo template to show how content will be rendered in the UI",
+	},
 	"Smart Parking System": {
 		Path:        "proSamik/Smart-Parking-System-using-8051-MCU",
 		Description: "An embedded system project implementing smart parking solution using 8051 microcontroller",

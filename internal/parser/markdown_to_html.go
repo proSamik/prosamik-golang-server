@@ -2,107 +2,135 @@ package parser
 
 import (
 	"bytes"
-	"github.com/russross/blackfriday/v2"
+	"fmt"
+	"regexp"
 	"strings"
+
+	"github.com/gomarkdown/markdown"
+	"github.com/gomarkdown/markdown/html"
+	"github.com/gomarkdown/markdown/parser"
 )
 
-// ConvertMarkdownToHTML processes Markdown inside HTML tags and converts it to HTML.
+// ConvertMarkdownToHTML converts Markdown to HTML using gomarkdown library
 func ConvertMarkdownToHTML(input string) (string, error) {
-	// Step 1: Remove HTML comments from the input.
-	inputWithoutComments := removeHTMLComments(input)
-
-	// Step 2: Split the content into HTML and Markdown parts.
-	parts := splitHTMLMarkdown(inputWithoutComments)
-
-	// Step 3: Process each part and convert Markdown to HTML while preserving HTML parts.
-	var output bytes.Buffer
-	for _, part := range parts {
-		if isHTML(part) {
-			// Append HTML parts directly.
-			output.WriteString(part)
-		} else {
-			// Convert Markdown parts to HTML using blackfriday.
-			processedMarkdown := blackfriday.Run([]byte(part))
-			output.Write(processedMarkdown)
-		}
+	// Validate input
+	if input == "" {
+		return "", fmt.Errorf("empty input")
 	}
 
-	return output.String(), nil
+	// Preprocess the input to handle nested lists and special formatting
+	input = preprocessMarkdown(input)
+
+	// Create a Markdown parser with comprehensive extensions
+	extensions := parser.CommonExtensions |
+		parser.AutoHeadingIDs |
+		parser.Strikethrough |
+		parser.Footnotes |
+		parser.HeadingIDs |
+		parser.OrderedListStart |
+		parser.NoIntraEmphasis // Prevent unwanted emphasis
+
+	p := parser.NewWithExtensions(extensions)
+
+	// Create HTML renderer with comprehensive options
+	htmlFlags := html.CommonFlags |
+		html.HrefTargetBlank
+
+	opts := html.RendererOptions{
+		Flags: htmlFlags,
+	}
+	renderer := html.NewRenderer(opts)
+
+	// Convert Markdown to HTML
+	md := []byte(input)
+	htmlContent := markdown.ToHTML(md, p, renderer)
+
+	return string(htmlContent), nil
 }
 
-// splitHTMLMarkdown splits the input string into alternating HTML and Markdown parts.
-func splitHTMLMarkdown(input string) []string {
-	var parts []string
-	var current strings.Builder
-	inTag := false
+// preprocessMarkdown handles special Markdown formatting cases
+func preprocessMarkdown(input string) string {
+	// Replace Windows-style line breaks with Unix-style
+	input = strings.ReplaceAll(input, "\r\n", "\n")
 
-	for i := 0; i < len(input); i++ {
-		char := input[i]
+	// Regex for detecting list items with various formatting
+	listItemRegex := regexp.MustCompile(`^([ \t]*)([-*]|\d+\.)\s*(.*)$`)
 
-		// Detect the start of an HTML tag.
-		if char == '<' && !inTag {
-			// Add the current Markdown content if any.
-			if current.Len() > 0 {
-				parts = append(parts, current.String())
-				current.Reset()
+	// Split input into lines
+	lines := strings.Split(input, "\n")
+	var processedLines []string
+	var inListBlock bool
+
+	for _, line := range lines {
+		matches := listItemRegex.FindStringSubmatch(line)
+
+		if matches != nil {
+			// This is a list item
+			indent := matches[1]
+			marker := matches[2]
+			content := matches[3]
+
+			// Ensure we start a list block if not already in one
+			if !inListBlock {
+				inListBlock = true
+				// Add an empty line before the list to ensure proper list parsing
+				processedLines = append(processedLines, "")
 			}
-			inTag = true
-		}
 
-		// Detect the end of an HTML tag.
-		if char == '>' && inTag {
-			inTag = false
-		}
+			// Reconstruct the list item
+			processedLines = append(processedLines, indent+marker+" "+content)
+		} else {
+			// Non-list line
+			if inListBlock && strings.TrimSpace(line) != "" {
+				// If we were in a list block and this is not an empty line,
+				// it means the list has ended
+				inListBlock = false
+				// Add an empty line to separate lists
+				processedLines = append(processedLines, "")
+			}
 
-		// Append the current character to the current part.
-		current.WriteByte(char)
-
-		// If we've exited an HTML tag, save it as a separate part.
-		if !inTag && char == '>' {
-			parts = append(parts, current.String())
-			current.Reset()
+			processedLines = append(processedLines, line)
 		}
 	}
 
-	// Add any remaining content as a Markdown part.
-	if current.Len() > 0 {
-		parts = append(parts, current.String())
-	}
-
-	return parts
+	// Join the processed lines
+	return strings.Join(processedLines, "\n")
 }
 
-// isHTML checks if a string is an HTML tag or element.
-func isHTML(content string) bool {
-	content = strings.TrimSpace(content)
-	return len(content) > 1 && content[0] == '<' && content[len(content)-1] == '>'
+// RemoveHTMLComments removes HTML comments from the input string
+func RemoveHTMLComments(input string) string {
+	commentRegex := regexp.MustCompile(`<!--.*?-->`)
+	return commentRegex.ReplaceAllString(input, "")
 }
 
-// removeHTMLComments removes all HTML comments from the input string.
-func removeHTMLComments(input string) string {
-	var result strings.Builder
-	inComment := false
+// ProcessHTMLWithMarkdown processes Markdown within HTML, converting Markdown parts to HTML
+func ProcessHTMLWithMarkdown(input string) (string, error) {
+	// Remove comments first
+	input = RemoveHTMLComments(input)
 
-	for i := 0; i < len(input); i++ {
-		// Detect the start of an HTML comment.
-		if i+3 < len(input) && input[i:i+4] == "<!--" {
-			inComment = true
-			i += 3 // Skip the opening comment sequence.
+	// Regular expression to split HTML and Markdown
+	splitRegex := regexp.MustCompile(`(<[^>]+>|</[^>]+>)`)
+	parts := splitRegex.Split(input, -1)
+
+	var processedHTML bytes.Buffer
+	for _, part := range parts {
+		trimmedPart := strings.TrimSpace(part)
+
+		// If it's an HTML tag, write it directly
+		if splitRegex.MatchString(trimmedPart) {
+			processedHTML.WriteString(trimmedPart)
 			continue
 		}
 
-		// Detect the end of an HTML comment.
-		if inComment && i+2 < len(input) && input[i:i+3] == "-->" {
-			inComment = false
-			i += 2 // Skip the closing comment sequence.
-			continue
-		}
-
-		// If not in a comment, write the character to the result.
-		if !inComment {
-			result.WriteByte(input[i])
+		// If it's Markdown content, convert to HTML
+		if trimmedPart != "" {
+			htmlContent, err := ConvertMarkdownToHTML(trimmedPart)
+			if err != nil {
+				return "", fmt.Errorf("error converting Markdown to HTML: %v", err)
+			}
+			processedHTML.WriteString(htmlContent)
 		}
 	}
 
-	return result.String()
+	return processedHTML.String(), nil
 }
