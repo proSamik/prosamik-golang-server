@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"bytes"
 	"fmt"
 	"regexp"
 	"strings"
@@ -104,36 +103,4 @@ func preprocessMarkdown(input string) string {
 func RemoveHTMLComments(input string) string {
 	commentRegex := regexp.MustCompile(`<!--.*?-->`)
 	return commentRegex.ReplaceAllString(input, "")
-}
-
-// ProcessHTMLWithMarkdown processes Markdown within HTML, converting Markdown parts to HTML
-func ProcessHTMLWithMarkdown(input string) (string, error) {
-	// Remove comments first
-	input = RemoveHTMLComments(input)
-
-	// Regular expression to split HTML and Markdown
-	splitRegex := regexp.MustCompile(`(<[^>]+>|</[^>]+>)`)
-	parts := splitRegex.Split(input, -1)
-
-	var processedHTML bytes.Buffer
-	for _, part := range parts {
-		trimmedPart := strings.TrimSpace(part)
-
-		// If it's an HTML tag, write it directly
-		if splitRegex.MatchString(trimmedPart) {
-			processedHTML.WriteString(trimmedPart)
-			continue
-		}
-
-		// If it's Markdown content, convert to HTML
-		if trimmedPart != "" {
-			htmlContent, err := ConvertMarkdownToHTML(trimmedPart)
-			if err != nil {
-				return "", fmt.Errorf("error converting Markdown to HTML: %v", err)
-			}
-			processedHTML.WriteString(htmlContent)
-		}
-	}
-
-	return processedHTML.String(), nil
 }
