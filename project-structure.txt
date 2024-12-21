@@ -1,4 +1,6 @@
 .
+|-- LICENSE
+|-- README.md
 |-- cmd
 |   `-- server
 |       `-- main.go
@@ -14,9 +16,7 @@
 |   |-- middleware
 |   |   `-- middleware.go
 |   `-- parser
-|       |-- html_parser.go
-|       |-- markdown_parser.go
-|       `-- parser.go
+|       `-- markdown_to_html.go
 |-- pkg
 |   `-- models
 |       `-- models.go

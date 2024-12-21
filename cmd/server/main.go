@@ -5,8 +5,7 @@ import (
 	"log"
 	"net/http"
 	"prosamik-backend/internal/auth"
-	"prosamik-backend/internal/handler"
-	"prosamik-backend/internal/middleware"
+	"prosamik-backend/internal/router"
 )
 
 func main() {
@@ -21,13 +20,7 @@ func main() {
 	}
 
 	// Setup routes
-	http.HandleFunc("/readme",
-		middleware.CORSMiddleware(
-			middleware.LoggingMiddleware(
-				handler.HandleReadmeRequest,
-			),
-		),
-	)
+	router.SetupRoutes()
 
 	// Start server
 	port := ":10000"

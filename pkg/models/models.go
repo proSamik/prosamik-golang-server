@@ -17,3 +17,13 @@ type DocumentMetadata struct {
 	Author      string    `json:"author"`      // Author of the repository (owner)
 	Description string    `json:"description"` // Description or summary of the document
 }
+
+type RepoListItem struct {
+	Title       string `json:"title"`
+	RepoPath    string `json:"repoPath"`
+	Description string `json:"description"`
+}
+
+type RepoListResponse struct {
+	Repos []RepoListItem `json:"repos"`
+}
