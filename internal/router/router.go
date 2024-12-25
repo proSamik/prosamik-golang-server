@@ -1,4 +1,3 @@
-// internal/router/router.go
 package router
 
 import (
@@ -13,7 +12,7 @@ func SetupRoutes() {
 	http.HandleFunc("/readme",
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
-				handler.HandleReadmeRequest,
+				handler.MarkdownHandler,
 			),
 		),
 	)

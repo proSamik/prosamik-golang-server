@@ -6,25 +6,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
+	"prosamik-backend/internal/auth"
 	"strings"
 	"time"
-
-	"prosamik-backend/internal/auth"
 )
 
-type ReadmeResponse struct {
-	Content  string `json:"content"`
-	Encoding string `json:"encoding"`
+type GitHubFile struct {
+	Name    string `json:"name"`
+	Path    string `json:"path"`
+	Content string `json:"content"`
 }
 
-// FetchReadmeContent retrieves README content from GitHub
-func FetchReadmeContent(ctx context.Context, owner, repo string) (string, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/readme", owner, repo)
-	log.Printf("Fetching README from: %s", url)
+// FetchContentFromGitHubURL fetches content from a GitHub URL using the constructed API URL
+func FetchContentFromGitHubURL(ctx context.Context, apiURL string) (string, error) {
 
-	req, err := createRequest(ctx, url)
+	req, err := createRequest(ctx, apiURL)
 	if err != nil {
 		return "", fmt.Errorf("creating request: %w", err)
 	}
@@ -34,7 +31,11 @@ func FetchReadmeContent(ctx context.Context, owner, repo string) (string, error)
 	if err != nil {
 		return "", fmt.Errorf("making request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			fmt.Printf("warning: failed to close response body: %v\n", cerr)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("GitHub API returned non-OK status: %s", resp.Status)
@@ -45,21 +46,18 @@ func FetchReadmeContent(ctx context.Context, owner, repo string) (string, error)
 		return "", fmt.Errorf("reading response body: %w", err)
 	}
 
-	var readmeResp ReadmeResponse
-	if err := json.Unmarshal(body, &readmeResp); err != nil {
-		return "", fmt.Errorf("parsing JSON response: %w", err)
+	// Parse the JSON response into GitHubFile struct
+	var fileContent GitHubFile
+	if err := json.Unmarshal(body, &fileContent); err != nil {
+		return "", fmt.Errorf("error unmarshalling GitHub response: %v", err)
 	}
 
-	if readmeResp.Content == "" {
-		return "", fmt.Errorf("empty content received from GitHub API")
-	}
-
-	decodedContent, err := decodeReadmeContent(readmeResp.Content)
+	// If the content is base64 encoded, decode it
+	decodedContent, err := decodeBase64Content(fileContent.Content)
 	if err != nil {
-		return "", fmt.Errorf("decoding content: %w", err)
+		return "", fmt.Errorf("error decoding base64 content: %v", err)
 	}
 
-	log.Printf("Successfully fetched and decoded README (length: %d characters)", len(decodedContent))
 	return decodedContent, nil
 }
 
@@ -79,7 +77,8 @@ func createRequest(ctx context.Context, url string) (*http.Request, error) {
 	return req, nil
 }
 
-func decodeReadmeContent(content string) (string, error) {
+// decodeBase64Content decodes the base64 content from GitHub API response
+func decodeBase64Content(content string) (string, error) {
 	cleanContent := strings.ReplaceAll(content, "\n", "")
 	decodedBytes, err := base64.StdEncoding.DecodeString(cleanContent)
 	if err != nil {
