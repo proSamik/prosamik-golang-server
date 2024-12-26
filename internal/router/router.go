@@ -35,4 +35,13 @@ func SetupRoutes() {
 		),
 	)
 
+	// Register route for newsletter subscription
+	http.HandleFunc("/newsletter",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				handler.HandleNewsletter,
+			),
+		),
+	)
+
 }
