@@ -25,4 +25,14 @@ func SetupRoutes() {
 			),
 		),
 	)
+
+	// Register route for feedback form
+	http.HandleFunc("/feedback",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				handler.HandleFeedback,
+			),
+		),
+	)
+
 }
