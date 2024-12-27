@@ -51,7 +51,7 @@ func SetupRoutes() {
 	http.HandleFunc("/samik/login",
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
-				handler.HandleAdminLogin,
+				handler.HandleAdminLoginUsingJWT,
 			),
 		),
 	)
@@ -60,7 +60,7 @@ func SetupRoutes() {
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
 				middleware.AuthMiddleware(
-					handler.HandleLogout,
+					handler.HandleAdminLogout,
 				),
 			),
 		),
@@ -70,7 +70,7 @@ func SetupRoutes() {
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
 				middleware.AuthMiddleware(
-					handler.HandleAdminDashboard,
+					handler.HandleDashboard,
 				),
 			),
 		),

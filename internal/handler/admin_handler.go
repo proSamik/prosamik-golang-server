@@ -16,7 +16,17 @@ type PageData struct {
 	Error string
 }
 
-func HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
+func HandleRoot(w http.ResponseWriter, r *http.Request) {
+	// If it's the root path, redirect to login
+	if r.URL.Path == "/" {
+		http.Redirect(w, r, "/samik", http.StatusSeeOther)
+		return
+	}
+	// If it's any other unhandled path, return 404
+	http.NotFound(w, r)
+}
+
+func HandleAdminLoginUsingJWT(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		data := PageData{
@@ -38,7 +48,10 @@ func HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 				Page:  "login",
 				Error: "Username and password are required",
 			}
-			templates.ExecuteTemplate(w, "base", data)
+			if err := templates.ExecuteTemplate(w, "base", data); err != nil {
+				log.Printf("Template error: %v", err)
+				http.Error(w, "Failed to render template", http.StatusInternalServerError)
+			}
 			return
 		}
 
@@ -47,7 +60,10 @@ func HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 				Page:  "login",
 				Error: "Invalid username or password",
 			}
-			templates.ExecuteTemplate(w, "base", data)
+			if err := templates.ExecuteTemplate(w, "base", data); err != nil {
+				log.Printf("Template error: %v", err)
+				http.Error(w, "Failed to render template", http.StatusInternalServerError)
+			}
 			return
 		}
 
@@ -59,7 +75,10 @@ func HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 				Page:  "login",
 				Error: "Authentication error occurred",
 			}
-			templates.ExecuteTemplate(w, "base", data)
+			if err := templates.ExecuteTemplate(w, "base", data); err != nil {
+				log.Printf("Template error: %v", err)
+				http.Error(w, "Failed to render template", http.StatusInternalServerError)
+			}
 			return
 		}
 
@@ -81,7 +100,7 @@ func HandleAdminLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
+func HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	// Get username from JWT token for personalized welcome
 	cookie, err := r.Cookie("auth_token")
 	if err != nil {
@@ -108,7 +127,7 @@ func HandleAdminDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func HandleLogout(w http.ResponseWriter, r *http.Request) {
+func HandleAdminLogout(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -124,14 +143,4 @@ func HandleLogout(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("User logged out successfully")
 	http.Redirect(w, r, "/samik/login", http.StatusSeeOther)
-}
-
-func HandleRoot(w http.ResponseWriter, r *http.Request) {
-	// If it's the root path, redirect to login
-	if r.URL.Path == "/" {
-		http.Redirect(w, r, "/samik", http.StatusSeeOther)
-		return
-	}
-	// If it's any other unhandled path, return 404
-	http.NotFound(w, r)
 }
