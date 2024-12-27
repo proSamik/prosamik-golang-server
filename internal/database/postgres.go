@@ -3,15 +3,20 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 var DB *sql.DB
 
-// InitDB initializes the database connection and ensures schema exists
+// InitDB initializes the database connection and applies migrations
 func InitDB() error {
+	// Construct the connection string from environment variables
 	connectionString := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		os.Getenv("DB_HOST"),
@@ -22,6 +27,7 @@ func InitDB() error {
 	)
 
 	var err error
+	// Open a connection to the PostgreSQL database
 	DB, err = sql.Open("postgres", connectionString)
 	if err != nil {
 		return fmt.Errorf("error opening database: %v", err)
@@ -38,57 +44,45 @@ func InitDB() error {
 
 	log.Println("Successfully connected to PostgreSQL database")
 
-	// Initialize schema
-	if err = initializeSchema(); err != nil {
-		return fmt.Errorf("error initializing schema: %v", err)
+	// Apply migrations
+	if err = applyMigrations(); err != nil {
+		return fmt.Errorf("error applying migrations: %v", err)
 	}
 
 	return nil
 }
 
-// initializeSchema creates necessary tables if they don't exist
-func initializeSchema() error {
-	// Begin transaction
-	tx, err := DB.Begin()
+// applyMigrations applies any pending migrations
+func applyMigrations() error {
+	wd, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("error starting transaction: %v", err)
-	}
-	defer tx.Rollback() // Will rollback if commit doesn't happen
-
-	createTableSQL := `
-    -- Create sequence if it doesn't exist
-    CREATE SEQUENCE IF NOT EXISTS newsletter_subscriptions_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO CYCLE;
-    
-    -- Create newsletter subscriptions table
-    CREATE TABLE IF NOT EXISTS newsletter_subscriptions (
-        id INTEGER PRIMARY KEY DEFAULT nextval('newsletter_subscriptions_id_seq'),
-        email VARCHAR(255) UNIQUE NOT NULL,
-        registration_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        verified BOOLEAN DEFAULT FALSE
-    );
-    
-    -- Reset sequence to max id or 1 if table is empty
-    SELECT setval('newsletter_subscriptions_id_seq', 
-        COALESCE((SELECT MAX(id) FROM newsletter_subscriptions), 1), false);
-
-    -- Create index on email for faster lookups
-    CREATE INDEX IF NOT EXISTS idx_newsletter_email ON newsletter_subscriptions(email);
-    `
-
-	// Execute schema creation within transaction
-	if _, err := tx.Exec(createTableSQL); err != nil {
-		return fmt.Errorf("error creating schema: %v", err)
+		return fmt.Errorf("error getting current working directory: %v", err)
 	}
 
-	// Commit transaction
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("error committing schema changes: %v", err)
+	migrationsPath := filepath.Join(wd, "internal", "database", "migrations")
+	sourceURL := fmt.Sprintf("file://%s", migrationsPath)
+
+	// Create a database driver instance
+	driver, err := postgres.WithInstance(DB, &postgres.Config{})
+	if err != nil {
+		return fmt.Errorf("could not create migration driver: %v", err)
 	}
 
-	log.Println("Successfully initialized database schema")
+	// Create migration instance using driver
+	m, err := migrate.NewWithDatabaseInstance(
+		sourceURL,
+		"postgres", // database name
+		driver,
+	)
+	if err != nil {
+		return fmt.Errorf("error creating migrate instance: %v", err)
+	}
+
+	// Run migrations
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("error applying migrations: %v", err)
+	}
+
+	log.Println("Migrations applied successfully")
 	return nil
 }
