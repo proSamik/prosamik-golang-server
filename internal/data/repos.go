@@ -3,51 +3,114 @@ package data
 type RepoInfo struct {
 	Path        string
 	Description string
+	Order       int
 }
 
-var ReposList = map[string]RepoInfo{
-	"Demo Template": {
-		Path:        "https://github.com/proSamik/demo-template",
-		Description: "A demo template to show how content will be rendered in the UI",
+// OrderedReposList maintains the order of repositories (reversed order - newest first)
+var OrderedReposList = []struct {
+	Title string
+	Info  RepoInfo
+}{
+	{
+		Title: "Task Management API(using Go)",
+		Info: RepoInfo{
+			Path:        "https://github.com/proSamik/go-task-management-api",
+			Description: "Golang-based task management REST API",
+			Order:       0,
+		},
 	},
-	"Direct link": {
-		Path:        "https://github.com/proSamik/airbnb-analytics/blob/main/mock_data/README.md",
-		Description: "Direct Link of a markdown",
+	{
+		Title: "To Do List API with caching(using SpringBoot)",
+		Info: RepoInfo{
+			Path:        "https://github.com/proSamik/Spring-Boot-Todo-List-API-with-Caching",
+			Description: "Spring Boot-based Todo List API implementation with caching mechanisms",
+			Order:       1,
+		},
 	},
-	"Smart Parking System": {
-		Path:        "https://github.com/proSamik/Smart-Parking-System-using-8051-MCU",
-		Description: "An embedded system project implementing smart parking solution using 8051 microcontroller",
+	{
+		Title: "Grocery App backend",
+		Info: RepoInfo{
+			Path:        "https://github.com/proSamik/grocery-backend",
+			Description: "Backend API for a grocery shopping application",
+			Order:       2,
+		},
 	},
-	"AI Receipt": {
-		Path:        "https://github.com/proSamik/AiReceipt",
-		Description: "AI-powered receipt scanner and expense tracker application",
+	{
+		Title: "Airbnb Analytics",
+		Info: RepoInfo{
+			Path:        "https://github.com/proSamik/airbnb-analytics",
+			Description: "Data analysis project for Airbnb listings and pricing trends",
+			Order:       3,
+		},
 	},
-	"About me": {
-		Path:        "https://github.com/proSamik/proSamik",
-		Description: "My personal portfolio and profile repository",
+	{
+		Title: "ProSamik Server",
+		Info: RepoInfo{
+			Path:        "https://github.com/proSamik/prosamik-server",
+			Description: "Backend server implementation for ProSamik applications",
+			Order:       4,
+		},
 	},
-	"ProSamik Frontend App": {
-		Path:        "https://github.com/proSamik/prosamik-frontend-app",
-		Description: "Frontend application built with React and TypeScript",
+	{
+		Title: "ProSamik Frontend App",
+		Info: RepoInfo{
+			Path:        "https://github.com/proSamik/prosamik-frontend-app",
+			Description: "Frontend application built with React and TypeScript",
+			Order:       5,
+		},
 	},
-	"ProSamik Server": {
-		Path:        "https://github.com/proSamik/prosamik-server",
-		Description: "Backend server implementation for ProSamik applications",
+	{
+		Title: "About me",
+		Info: RepoInfo{
+			Path:        "https://github.com/proSamik/proSamik",
+			Description: "My personal portfolio and profile repository",
+			Order:       6,
+		},
 	},
-	"Airbnb Analytics": {
-		Path:        "https://github.com/proSamik/airbnb-analytics",
-		Description: "Data analysis project for Airbnb listings and pricing trends",
+	{
+		Title: "AI Receipt",
+		Info: RepoInfo{
+			Path:        "https://github.com/proSamik/AiReceipt",
+			Description: "AI-powered receipt scanner and expense tracker application",
+			Order:       7,
+		},
 	},
-	"Grocery App backend": {
-		Path:        "https://github.com/proSamik/grocery-backend",
-		Description: "Backend API for a grocery shopping application",
+	{
+		Title: "Smart Parking System",
+		Info: RepoInfo{
+			Path:        "https://github.com/proSamik/Smart-Parking-System-using-8051-MCU",
+			Description: "An embedded system project implementing smart parking solution using 8051 microcontroller",
+			Order:       8,
+		},
 	},
-	"To Do List API with caching(using SpringBoot)": {
-		Path:        "https://github.com/proSamik/Spring-Boot-Todo-List-API-with-Caching",
-		Description: "Spring Boot-based Todo List API implementation with caching mechanisms",
+	{
+		Title: "Direct link",
+		Info: RepoInfo{
+			Path:        "https://github.com/proSamik/airbnb-analytics/blob/main/mock_data/README.md",
+			Description: "Direct Link of a markdown",
+			Order:       9,
+		},
 	},
-	"Task Management API(using Go)": {
-		Path:        "https://github.com/proSamik/go-task-management-api",
-		Description: "Golang-based task management REST API",
+	{
+		Title: "Demo Template",
+		Info: RepoInfo{
+			Path:        "https://github.com/proSamik/demo-template",
+			Description: "A demo template to show how content will be rendered in the UI",
+			Order:       10,
+		},
 	},
+}
+
+// ReposList maintains backward compatibility
+var ReposList = make(map[string]RepoInfo)
+
+func init() {
+	// Initialize the map from the ordered slice
+	for _, item := range OrderedReposList {
+		// We don't include Order in the map version to maintain original structure
+		ReposList[item.Title] = RepoInfo{
+			Path:        item.Info.Path,
+			Description: item.Info.Description,
+		}
+	}
 }

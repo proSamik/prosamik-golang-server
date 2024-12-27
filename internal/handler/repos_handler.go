@@ -13,13 +13,16 @@ func HandleReposList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repos := make([]models.RepoListItem, 0, len(data.ReposList))
+	// Create repos slice with the same capacity
+	repos := make([]models.RepoListItem, 0, len(data.OrderedReposList))
 
-	for title, repoInfo := range data.ReposList {
+	// Iterate through OrderedReposList in reverse order
+	for i := len(data.OrderedReposList) - 1; i >= 0; i-- {
+		item := data.OrderedReposList[i]
 		repos = append(repos, models.RepoListItem{
-			Title:       title,
-			RepoPath:    repoInfo.Path,
-			Description: repoInfo.Description,
+			Title:       item.Title,
+			RepoPath:    item.Info.Path,
+			Description: item.Info.Description,
 		})
 	}
 
