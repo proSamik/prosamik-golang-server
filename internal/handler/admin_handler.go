@@ -17,7 +17,6 @@ type PageData struct {
 }
 
 func HandleRoot(w http.ResponseWriter, r *http.Request) {
-	// If it's the root path, redirect to login
 	if r.URL.Path == "/" {
 		http.Redirect(w, r, "/samik", http.StatusSeeOther)
 		return
@@ -42,6 +41,7 @@ func HandleAdminLoginUsingJWT(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		username := r.FormValue("username")
 		password := r.FormValue("password")
+		envPassword := os.Getenv("ADMIN_PASSWORD")
 
 		if username == "" || password == "" {
 			data := PageData{
@@ -55,7 +55,7 @@ func HandleAdminLoginUsingJWT(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if username != "admin" || password != os.Getenv("ADMIN_PASSWORD") {
+		if username != "admin" || password != envPassword {
 			data := PageData{
 				Page:  "login",
 				Error: "Invalid username or password",
