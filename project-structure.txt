@@ -9,17 +9,24 @@
 |-- internal
 |   |-- auth
 |   |   `-- github_auth.go
+|   |-- data
+|   |   `-- repos.go
 |   |-- fetcher
-|   |   `-- readme_fetcher.go
+|   |   `-- markdown_fetcher.go
 |   |-- handler
-|   |   `-- readme_handler.go
+|   |   |-- feedback_handler.go
+|   |   |-- markdown_handler.go
+|   |   |-- newsletter_handler.go
+|   |   `-- repos_handler.go
 |   |-- middleware
 |   |   `-- middleware.go
-|   `-- parser
-|       `-- markdown_to_html.go
+|   |-- parser
+|   |   `-- markdown_to_html.go
+|   `-- router
+|       `-- router.go
 |-- pkg
 |   `-- models
 |       `-- models.go
 `-- project-structure.txt
 
-11 directories, 12 files
+13 directories, 17 files

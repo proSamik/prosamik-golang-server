@@ -44,4 +44,35 @@ func SetupRoutes() {
 		),
 	)
 
+	// Root route handler
+	http.HandleFunc("/", handler.HandleRoot)
+
+	// Admin routes
+	http.HandleFunc("/samik/login",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				handler.HandleAdminLogin,
+			),
+		),
+	)
+
+	http.HandleFunc("/samik/logout",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleLogout,
+				),
+			),
+		),
+	)
+
+	http.HandleFunc("/samik",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleAdminDashboard,
+				),
+			),
+		),
+	)
 }
