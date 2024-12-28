@@ -28,8 +28,21 @@ func (r *NewsletterRepository) GetSubscriptionByEmail(email string) (*models.New
         WHERE email = $1
     `
 
+	// Prepare the statement
+	stmt, err := r.db.Prepare(query)
+	if err != nil {
+		return nil, fmt.Errorf("prepare statement error: %w", err)
+	}
+
+	// Use closure to handle defer error
+	defer func() {
+		if closeErr := stmt.Close(); closeErr != nil {
+			err = fmt.Errorf("statement close error: %v: %w", closeErr, err)
+		}
+	}()
+
 	subscription := &models.Newsletter{}
-	err := r.db.QueryRow(query, email).Scan(
+	err = stmt.QueryRow(email).Scan(
 		&subscription.ID,
 		&subscription.Email,
 		&subscription.RegistrationTime,
@@ -42,7 +55,7 @@ func (r *NewsletterRepository) GetSubscriptionByEmail(email string) (*models.New
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("error getting subscription: %v", err)
+		return nil, fmt.Errorf("scan error: %w", err)
 	}
 
 	return subscription, nil
@@ -56,8 +69,21 @@ func (r *NewsletterRepository) CreateSubscription(email string) (*models.Newslet
         RETURNING id, email, registration_timestamp, verified
     `
 
+	// Prepare the statement
+	stmt, err := r.db.Prepare(query)
+	if err != nil {
+		return nil, fmt.Errorf("prepare statement error: %w", err)
+	}
+
+	// Use closure to handle defer error
+	defer func() {
+		if closeErr := stmt.Close(); closeErr != nil {
+			err = fmt.Errorf("statement close error: %v: %w", closeErr, err)
+		}
+	}()
+
 	subscription := &models.Newsletter{}
-	err := r.db.QueryRow(query, email).Scan(
+	err = stmt.QueryRow(email).Scan(
 		&subscription.ID,
 		&subscription.Email,
 		&subscription.RegistrationTime,
@@ -65,7 +91,7 @@ func (r *NewsletterRepository) CreateSubscription(email string) (*models.Newslet
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("error creating subscription: %v", err)
+		return nil, fmt.Errorf("create subscription error: %w", err)
 	}
 
 	return subscription, nil

@@ -22,6 +22,8 @@ type RepoListItem struct {
 	Title       string `json:"title"`
 	RepoPath    string `json:"repoPath"`
 	Description string `json:"description"`
+	Tags        string `json:"tags"`        // New field
+	ViewsCount  int    `json:"views_count"` // New field
 }
 
 type RepoListResponse struct {
