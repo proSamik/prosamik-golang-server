@@ -15,11 +15,11 @@ func HandleProjectsList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Initialize a slice to store project items
-	projects := make([]models.RepoListItem, 0, len(data.OrderedReposList))
+	projects := make([]models.RepoListItem, 0, len(data.OrderedProjectsList))
 
 	// 3. Iterate through the data in reverse order (newest first)
-	for i := len(data.OrderedReposList) - 1; i >= 0; i-- {
-		item := data.OrderedReposList[i]
+	for i := len(data.OrderedProjectsList) - 1; i >= 0; i-- {
+		item := data.OrderedProjectsList[i]
 		projects = append(projects, models.RepoListItem{
 			Title:       item.Title,
 			RepoPath:    item.Info.Path,

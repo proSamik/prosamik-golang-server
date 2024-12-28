@@ -13,10 +13,10 @@ func HandleBlogsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repos := make([]models.RepoListItem, 0, len(data.OrderedReposList))
+	repos := make([]models.RepoListItem, 0, len(data.OrderedBlogsList))
 
-	for i := len(data.OrderedReposList) - 1; i >= 0; i-- {
-		item := data.OrderedReposList[i]
+	for i := len(data.OrderedBlogsList) - 1; i >= 0; i-- {
+		item := data.OrderedBlogsList[i]
 		repos = append(repos, models.RepoListItem{
 			Title:       item.Title,
 			RepoPath:    item.Info.Path,
