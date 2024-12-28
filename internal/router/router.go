@@ -4,10 +4,15 @@ import (
 	"net/http"
 	"prosamik-backend/internal/handler"
 	"prosamik-backend/internal/middleware"
+	"time"
 )
 
 // SetupRoutes configures and returns all application routes
 func SetupRoutes() {
+
+	// Create a rate limiter that allows 5 requests per minute
+	rateLimiter := middleware.NewRateLimiter(60, time.Minute)
+
 	// Register routes with middleware
 	http.HandleFunc("/readme",
 		middleware.CORSMiddleware(
@@ -30,16 +35,20 @@ func SetupRoutes() {
 	http.HandleFunc("/feedback",
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
-				handler.HandleFeedback,
+				rateLimiter.RateLimitMiddleware(
+					handler.HandleFeedback,
+				),
 			),
 		),
 	)
 
-	// Register route for newsletter subscription
+	// Register route for newsletter subscription with rate limiting
 	http.HandleFunc("/newsletter",
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
-				handler.HandleNewsletter,
+				rateLimiter.RateLimitMiddleware(
+					handler.HandleNewsletter,
+				),
 			),
 		),
 	)
