@@ -1,32 +1,32 @@
-# Use the official Go image for building the app (Go 1.22)
+# Build stage
 FROM golang:1.22 AS builder
 
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy the Go modules manifests
+# Copy go.mod and go.sum files
 COPY go.mod go.sum ./
 
-# Download Go modules
+# Download dependencies
 RUN go mod download
 
-# Copy the rest of the application code
+# Copy the source code
 COPY . .
 
-# Build the Go application
-RUN go build -o main ./cmd/server/main.go
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/server/main.go
 
-# Use a minimal image for running the application
-FROM debian:bullseye-slim
+# Final stage
+FROM alpine:latest
 
 # Set the working directory
 WORKDIR /app
 
-# Copy the built binary from the builder stage
+# Copy the compiled binary from the builder stage
 COPY --from=builder /app/main .
 
-# Expose the port the application listens on
+# Expose the application port
 EXPOSE 10000
 
-# Run the binary
+# Command to run the application
 CMD ["./main"]
