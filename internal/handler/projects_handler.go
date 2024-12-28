@@ -7,17 +7,20 @@ import (
 	"prosamik-backend/pkg/models"
 )
 
-func HandleReposList(w http.ResponseWriter, r *http.Request) {
+func HandleProjectsList(w http.ResponseWriter, r *http.Request) {
+	// 1. Check if the method is GET
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	repos := make([]models.RepoListItem, 0, len(data.OrderedReposList))
+	// 2. Initialize a slice to store project items
+	projects := make([]models.RepoListItem, 0, len(data.OrderedReposList))
 
+	// 3. Iterate through the data in reverse order (newest first)
 	for i := len(data.OrderedReposList) - 1; i >= 0; i-- {
 		item := data.OrderedReposList[i]
-		repos = append(repos, models.RepoListItem{
+		projects = append(projects, models.RepoListItem{
 			Title:       item.Title,
 			RepoPath:    item.Info.Path,
 			Description: item.Info.Description,
@@ -26,10 +29,12 @@ func HandleReposList(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	// 4. Create the response structure
 	response := models.RepoListResponse{
-		Repos: repos,
+		Repos: projects,
 	}
 
+	// 5. Set header and encode response
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
