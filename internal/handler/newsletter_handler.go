@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"prosamik-backend/internal/models"
 	"prosamik-backend/internal/repository"
+	"prosamik-backend/pkg/models"
 )
 
 // NewsletterRequest represents the incoming request structure

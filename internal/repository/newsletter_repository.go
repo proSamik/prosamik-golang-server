@@ -2,9 +2,10 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"prosamik-backend/internal/database"
-	"prosamik-backend/internal/models"
+	"prosamik-backend/pkg/models"
 )
 
 // NewsletterRepository handles database operations for newsletter subscriptions
@@ -36,7 +37,7 @@ func (r *NewsletterRepository) GetSubscriptionByEmail(email string) (*models.New
 	)
 
 	// Return nil, nil if no subscription found
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 

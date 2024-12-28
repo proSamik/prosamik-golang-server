@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"prosamik-backend/internal/database"
@@ -9,11 +8,6 @@ import (
 )
 
 func main() {
-
-	// Load environment variables
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
 
 	// Setup routes
 	router.SetupRoutes()
