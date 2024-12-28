@@ -10,7 +10,7 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Copy the source code
+# Copy the source code, templates, and migrations
 COPY . .
 
 # Build the application
@@ -22,8 +22,10 @@ FROM alpine:latest
 # Set the working directory
 WORKDIR /app
 
-# Copy the compiled binary from the builder stage
+# Copy the compiled binary, templates, and migrations from the builder stage
 COPY --from=builder /app/main .
+COPY --from=builder /app/internal/templates ./internal/templates
+COPY --from=builder /app/internal/database/migrations ./internal/database/migrations
 
 # Expose the application port
 EXPOSE 10000
