@@ -391,6 +391,45 @@ func (r *ProjectRepository) GetProjectByPath(path string) (*models.Project, erro
 	return project, nil
 }
 
+// IncrementViewCount increments the views_count for a project
+func (r *ProjectRepository) IncrementProjectViewCount(id int64) error {
+	query := `
+        UPDATE projects 
+        SET views_count = views_count + 1
+        WHERE id = $1
+    `
+
+	stmt, err := r.db.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("prepare statement error: %w", err)
+	}
+
+	defer func() {
+		if cerr := closeStmtProject(stmt); cerr != nil {
+			// If there's no error from the function, use the close error
+			if closeErrProject == nil {
+				closeErrProject = cerr
+			}
+		}
+	}()
+
+	result, err := stmt.Exec(id)
+	if err != nil {
+		return fmt.Errorf("update view count error: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected error: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no project found with id: %d", id)
+	}
+
+	return nil
+}
+
 // Helper function to handle statement closing
 func closeStmtProject(stmt *sql.Stmt) error {
 	if err := stmt.Close(); err != nil {
