@@ -19,6 +19,8 @@ func NewBlogRepository() *BlogRepository {
 	}
 }
 
+var closeErr error
+
 // Helper function to normalize strings
 func normalizeBlogString(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
@@ -36,7 +38,16 @@ func (r *BlogRepository) GetBlogByTitle(title string) (*models.Blog, error) {
 	if err != nil {
 		return nil, fmt.Errorf("prepare statement error: %w", err)
 	}
-	defer stmt.Close()
+
+	var closeErr error
+	defer func() {
+		if cerr := closeStmt(stmt); cerr != nil {
+			// If there's no error from the function, use the close error
+			if closeErr == nil {
+				closeErr = cerr
+			}
+		}
+	}()
 
 	blog := &models.Blog{}
 	err = stmt.QueryRow(normalizeBlogString(title)).Scan(
@@ -70,13 +81,29 @@ func (r *BlogRepository) GetAllBlogs() ([]*models.Blog, error) {
 	if err != nil {
 		return nil, fmt.Errorf("prepare statement error: %w", err)
 	}
-	defer stmt.Close()
+
+	defer func() {
+		if cerr := closeStmt(stmt); cerr != nil {
+			// If there's no error from the function, use the close error
+			if closeErr == nil {
+				closeErr = cerr
+			}
+		}
+	}()
 
 	rows, err := stmt.Query()
 	if err != nil {
 		return nil, fmt.Errorf("query error: %w", err)
 	}
-	defer rows.Close()
+
+	defer func() {
+		if cerr := closeStmt(stmt); cerr != nil {
+			// If there's no error from the function, use the close error
+			if closeErr == nil {
+				closeErr = cerr
+			}
+		}
+	}()
 
 	var blogs []*models.Blog
 	for rows.Next() {
@@ -110,7 +137,15 @@ func (r *BlogRepository) CreateBlog(blog *models.Blog) error {
 	if err != nil {
 		return fmt.Errorf("prepare statement error: %w", err)
 	}
-	defer stmt.Close()
+
+	defer func() {
+		if cerr := closeStmt(stmt); cerr != nil {
+			// If there's no error from the function, use the close error
+			if closeErr == nil {
+				closeErr = cerr
+			}
+		}
+	}()
 
 	err = stmt.QueryRow(
 		strings.TrimSpace(blog.Title),
@@ -138,7 +173,15 @@ func (r *BlogRepository) UpdateBlog(blog *models.Blog) error {
 	if err != nil {
 		return fmt.Errorf("prepare statement error: %w", err)
 	}
-	defer stmt.Close()
+
+	defer func() {
+		if cerr := closeStmt(stmt); cerr != nil {
+			// If there's no error from the function, use the close error
+			if closeErr == nil {
+				closeErr = cerr
+			}
+		}
+	}()
 
 	result, err := stmt.Exec(
 		strings.TrimSpace(blog.Title),
@@ -174,7 +217,15 @@ func (r *BlogRepository) DeleteBlog(id int64) error {
 	if err != nil {
 		return fmt.Errorf("prepare statement error: %w", err)
 	}
-	defer stmt.Close()
+
+	defer func() {
+		if cerr := closeStmt(stmt); cerr != nil {
+			// If there's no error from the function, use the close error
+			if closeErr == nil {
+				closeErr = cerr
+			}
+		}
+	}()
 
 	result, err := stmt.Exec(id)
 	if err != nil {
@@ -193,7 +244,7 @@ func (r *BlogRepository) DeleteBlog(id int64) error {
 	return nil
 }
 
-// SearchBlogs searches for blogs by title, path, or tags
+// SearchBlogs searches for blogs by title, path, tags, or description
 func (r *BlogRepository) SearchBlogs(query string) ([]*models.Blog, error) {
 	searchQuery := `
         SELECT id, title, path, description, tags, views_count
@@ -201,6 +252,7 @@ func (r *BlogRepository) SearchBlogs(query string) ([]*models.Blog, error) {
         WHERE LOWER(title) LIKE LOWER($1) 
            OR LOWER(path) LIKE LOWER($1)
            OR LOWER(tags) LIKE LOWER($1)
+           OR LOWER(description) LIKE LOWER($1)
         ORDER BY id DESC
     `
 
@@ -208,14 +260,28 @@ func (r *BlogRepository) SearchBlogs(query string) ([]*models.Blog, error) {
 	if err != nil {
 		return nil, fmt.Errorf("prepare statement error: %w", err)
 	}
-	defer stmt.Close()
+
+	defer func() {
+		if cerr := closeStmt(stmt); cerr != nil {
+			// If there's no error from the function, use the close error
+			if closeErr == nil {
+				closeErr = cerr
+			}
+		}
+	}()
 
 	normalizedQuery := "%" + normalizeBlogString(query) + "%"
 	rows, err := stmt.Query(normalizedQuery)
 	if err != nil {
 		return nil, fmt.Errorf("query error: %w", err)
 	}
-	defer rows.Close()
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			err = fmt.Errorf("rows close error: %v: %w", err, err)
+		}
+	}(rows)
 
 	var blogs []*models.Blog
 	for rows.Next() {
@@ -234,6 +300,10 @@ func (r *BlogRepository) SearchBlogs(query string) ([]*models.Blog, error) {
 		blogs = append(blogs, blog)
 	}
 
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
 	return blogs, nil
 }
 
@@ -249,7 +319,15 @@ func (r *BlogRepository) GetBlog(id int64) (*models.Blog, error) {
 	if err != nil {
 		return nil, fmt.Errorf("prepare statement error: %w", err)
 	}
-	defer stmt.Close()
+
+	defer func() {
+		if cerr := closeStmt(stmt); cerr != nil {
+			// If there's no error from the function, use the close error
+			if closeErr == nil {
+				closeErr = cerr
+			}
+		}
+	}()
 
 	blog := &models.Blog{}
 	err = stmt.QueryRow(id).Scan(
@@ -269,4 +347,54 @@ func (r *BlogRepository) GetBlog(id int64) (*models.Blog, error) {
 	}
 
 	return blog, nil
+}
+
+// GetBlogByPath retrieves a blog by its path
+func (r *BlogRepository) GetBlogByPath(path string) (*models.Blog, error) {
+	query := `
+        SELECT id, title, path, description, tags, views_count
+        FROM blogs
+        WHERE path = $1
+    `
+
+	stmt, err := r.db.Prepare(query)
+	if err != nil {
+		return nil, fmt.Errorf("prepare statement error: %w", err)
+	}
+
+	defer func() {
+		if cerr := closeStmt(stmt); cerr != nil {
+			// If there's no error from the function, use the close error
+			if closeErr == nil {
+				closeErr = cerr
+			}
+		}
+	}()
+
+	blog := &models.Blog{}
+	err = stmt.QueryRow(path).Scan(
+		&blog.ID,
+		&blog.Title,
+		&blog.Path,
+		&blog.Description,
+		&blog.Tags,
+		&blog.ViewsCount,
+	)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("query error: %w", err)
+	}
+
+	return blog, nil
+}
+
+// Helper function to handle statement closing
+func closeStmt(stmt *sql.Stmt) error {
+	if err := stmt.Close(); err != nil {
+		return fmt.Errorf("error closing statement: %w", err)
+	}
+	return nil
 }

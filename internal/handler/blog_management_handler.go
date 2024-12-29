@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"prosamik-backend/internal/repository"
 	"prosamik-backend/pkg/models"
 	"strconv"
@@ -99,6 +100,26 @@ func HandleBlogAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate description length
+	if len(blog.Description) > 5000 {
+		renderFormError(w, "Description cannot exceed 5000 characters")
+		return
+	}
+
+	// Validate path format
+	if err := validatePath(blog.Path); err != nil {
+		renderFormError(w, err.Error())
+		return
+	}
+
+	// Validate and format tags
+	validTags, err := validateTags(blog.Tags)
+	if err != nil {
+		renderFormError(w, err.Error())
+		return
+	}
+	blog.Tags = validTags
+
 	repo := repository.NewBlogRepository()
 
 	// Check for existing title
@@ -114,15 +135,36 @@ func HandleBlogAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check for existing path
+	existingPath, err := repo.GetBlogByPath(blog.Path)
+	if err != nil {
+		log.Printf("Error checking existing path: %v", err)
+		renderFormError(w, "Internal server error")
+		return
+	}
+
+	if existingPath != nil {
+		renderFormError(w, "A blog with this path already exists")
+		return
+	}
+
 	// Create the blog
 	err = repo.CreateBlog(blog)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value") {
+			if strings.Contains(err.Error(), "blogs_path_key") {
+				renderFormError(w, "A blog with this path already exists")
+			} else {
+				renderFormError(w, "A blog with this title already exists")
+			}
+			return
+		}
 		log.Printf("Error adding blog: %v", err)
 		renderFormError(w, "Failed to add blog")
 		return
 	}
 
-	// Just render the success message
+	// Render a success message
 	w.Header().Set("Content-Type", "text/html")
 	err = templates.ExecuteTemplate(w, "blog-form-message", struct{ Error string }{Error: ""})
 	if err != nil {
@@ -303,4 +345,45 @@ func renderFormError(w http.ResponseWriter, message string) {
 	if err != nil {
 		log.Printf("Template error: %v", err)
 	}
+}
+
+// validateTags checks if tags are properly formatted
+func validateTags(tags string) (string, error) {
+	if tags == "" {
+		return "", nil
+	}
+
+	// Split tags and process each one
+	tagList := strings.Split(tags, ",")
+	var validTags []string
+
+	for _, tag := range tagList {
+		// Trim spaces
+		tag = strings.TrimSpace(tag)
+
+		// Check for periods
+		if strings.Contains(tag, ".") {
+			return "", fmt.Errorf("tags cannot contain periods: %s", tag)
+		}
+
+		if tag != "" {
+			validTags = append(validTags, tag)
+		}
+	}
+
+	return strings.Join(validTags, ","), nil
+}
+
+// validatePath checks if the path is a valid URL starting with http
+func validatePath(path string) error {
+	if !strings.HasPrefix(path, "http") {
+		return fmt.Errorf("path must start with http:// or https://")
+	}
+
+	_, err := url.Parse(path)
+	if err != nil {
+		return fmt.Errorf("invalid URL format: %v", err)
+	}
+
+	return nil
 }
