@@ -35,6 +35,8 @@
                 {{template "newsletter-management" .}}
             {{else if eq .Page "blog-management"}}
                 {{template "blog-management" .}}
+            {{else if eq .Page "project-management"}}
+                {{template "project-management" .}}
             {{end}}
         </main>
     {{end}}

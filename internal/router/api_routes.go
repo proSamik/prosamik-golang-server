@@ -59,4 +59,14 @@ func RegisterAPIRoutes() {
 			),
 		),
 	)
+
+	// Analytics route
+	http.HandleFunc("/analytics",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				handler.HandleAnalytics,
+			),
+		),
+	)
+
 }

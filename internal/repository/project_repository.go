@@ -9,28 +9,28 @@ import (
 	"strings"
 )
 
-type BlogRepository struct {
+type ProjectRepository struct {
 	db *sql.DB
 }
 
-func NewBlogRepository() *BlogRepository {
-	return &BlogRepository{
+func NewProjectRepository() *ProjectRepository {
+	return &ProjectRepository{
 		db: database.DB,
 	}
 }
 
-var closeErr error
+var closeErrProject error
 
 // Helper function to normalize strings
-func normalizeBlogString(s string) string {
+func normalizeProjectString(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
 }
 
-// GetBlogByTitle retrieves a blog by its title
-func (r *BlogRepository) GetBlogByTitle(title string) (*models.Blog, error) {
+// GetProjectByTitle retrieves a project by its title
+func (r *ProjectRepository) GetProjectByTitle(title string) (*models.Project, error) {
 	query := `
         SELECT id, title, path, description, tags, views_count
-        FROM blogs
+        FROM projects
         WHERE LOWER(title) = LOWER($1)
     `
 
@@ -39,24 +39,24 @@ func (r *BlogRepository) GetBlogByTitle(title string) (*models.Blog, error) {
 		return nil, fmt.Errorf("prepare statement error: %w", err)
 	}
 
-	var closeErr error
+	var closeErrProject error
 	defer func() {
-		if cerr := closeStmt(stmt); cerr != nil {
+		if cerr := closeStmtProject(stmt); cerr != nil {
 			// If there's no error from the function, use the close error
-			if closeErr == nil {
-				closeErr = cerr
+			if closeErrProject == nil {
+				closeErrProject = cerr
 			}
 		}
 	}()
 
-	blog := &models.Blog{}
-	err = stmt.QueryRow(normalizeBlogString(title)).Scan(
-		&blog.ID,
-		&blog.Title,
-		&blog.Path,
-		&blog.Description,
-		&blog.Tags,
-		&blog.ViewsCount,
+	project := &models.Project{}
+	err = stmt.QueryRow(normalizeProjectString(title)).Scan(
+		&project.ID,
+		&project.Title,
+		&project.Path,
+		&project.Description,
+		&project.Tags,
+		&project.ViewsCount,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -66,14 +66,14 @@ func (r *BlogRepository) GetBlogByTitle(title string) (*models.Blog, error) {
 		return nil, fmt.Errorf("scan error: %w", err)
 	}
 
-	return blog, nil
+	return project, nil
 }
 
-// GetAllBlogs retrieves all blog posts
-func (r *BlogRepository) GetAllBlogs() ([]*models.Blog, error) {
+// GetAllProjects retrieves all project posts
+func (r *ProjectRepository) GetAllProjects() ([]*models.Project, error) {
 	query := `
         SELECT id, title, path, description, tags, views_count
-        FROM blogs
+        FROM projects
         ORDER BY id DESC
     `
 
@@ -83,10 +83,10 @@ func (r *BlogRepository) GetAllBlogs() ([]*models.Blog, error) {
 	}
 
 	defer func() {
-		if cerr := closeStmt(stmt); cerr != nil {
+		if cerr := closeStmtProject(stmt); cerr != nil {
 			// If there's no error from the function, use the close error
-			if closeErr == nil {
-				closeErr = cerr
+			if closeErrProject == nil {
+				closeErrProject = cerr
 			}
 		}
 	}()
@@ -97,38 +97,38 @@ func (r *BlogRepository) GetAllBlogs() ([]*models.Blog, error) {
 	}
 
 	defer func() {
-		if cerr := closeStmt(stmt); cerr != nil {
+		if cerr := closeStmtProject(stmt); cerr != nil {
 			// If there's no error from the function, use the close error
-			if closeErr == nil {
-				closeErr = cerr
+			if closeErrProject == nil {
+				closeErrProject = cerr
 			}
 		}
 	}()
 
-	var blogs []*models.Blog
+	var projects []*models.Project
 	for rows.Next() {
-		blog := &models.Blog{}
+		project := &models.Project{}
 		err := rows.Scan(
-			&blog.ID,
-			&blog.Title,
-			&blog.Path,
-			&blog.Description,
-			&blog.Tags,
-			&blog.ViewsCount,
+			&project.ID,
+			&project.Title,
+			&project.Path,
+			&project.Description,
+			&project.Tags,
+			&project.ViewsCount,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan error: %w", err)
 		}
-		blogs = append(blogs, blog)
+		projects = append(projects, project)
 	}
 
-	return blogs, nil
+	return projects, nil
 }
 
-// CreateBlog adds a new blog post
-func (r *BlogRepository) CreateBlog(blog *models.Blog) error {
+// CreateProject adds a new project post
+func (r *ProjectRepository) CreateProject(project *models.Project) error {
 	query := `
-        INSERT INTO blogs (title, path, description, tags)
+        INSERT INTO projects (title, path, description, tags)
         VALUES ($1, $2, $3, $4)
         RETURNING id
     `
@@ -139,32 +139,32 @@ func (r *BlogRepository) CreateBlog(blog *models.Blog) error {
 	}
 
 	defer func() {
-		if cerr := closeStmt(stmt); cerr != nil {
+		if cerr := closeStmtProject(stmt); cerr != nil {
 			// If there's no error from the function, use the close error
-			if closeErr == nil {
-				closeErr = cerr
+			if closeErrProject == nil {
+				closeErrProject = cerr
 			}
 		}
 	}()
 
 	err = stmt.QueryRow(
-		strings.TrimSpace(blog.Title),
-		strings.TrimSpace(blog.Path),
-		strings.TrimSpace(blog.Description),
-		strings.TrimSpace(blog.Tags),
-	).Scan(&blog.ID)
+		strings.TrimSpace(project.Title),
+		strings.TrimSpace(project.Path),
+		strings.TrimSpace(project.Description),
+		strings.TrimSpace(project.Tags),
+	).Scan(&project.ID)
 
 	if err != nil {
-		return fmt.Errorf("create blog error: %w", err)
+		return fmt.Errorf("create project error: %w", err)
 	}
 
 	return nil
 }
 
-// UpdateBlog updates an existing blog post
-func (r *BlogRepository) UpdateBlog(blog *models.Blog) error {
+// UpdateProject updates an existing project post
+func (r *ProjectRepository) UpdateProject(project *models.Project) error {
 	query := `
-        UPDATE blogs
+        UPDATE projects
         SET title = $1, path = $2, description = $3, tags = $4
         WHERE id = $5
     `
@@ -175,20 +175,20 @@ func (r *BlogRepository) UpdateBlog(blog *models.Blog) error {
 	}
 
 	defer func() {
-		if cerr := closeStmt(stmt); cerr != nil {
+		if cerr := closeStmtProject(stmt); cerr != nil {
 			// If there's no error from the function, use the close error
-			if closeErr == nil {
-				closeErr = cerr
+			if closeErrProject == nil {
+				closeErrProject = cerr
 			}
 		}
 	}()
 
 	result, err := stmt.Exec(
-		strings.TrimSpace(blog.Title),
-		strings.TrimSpace(blog.Path),
-		strings.TrimSpace(blog.Description),
-		strings.TrimSpace(blog.Tags),
-		blog.ID,
+		strings.TrimSpace(project.Title),
+		strings.TrimSpace(project.Path),
+		strings.TrimSpace(project.Description),
+		strings.TrimSpace(project.Tags),
+		project.ID,
 	)
 	if err != nil {
 		return fmt.Errorf("update error: %w", err)
@@ -200,16 +200,16 @@ func (r *BlogRepository) UpdateBlog(blog *models.Blog) error {
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("no blog found with id: %d", blog.ID)
+		return fmt.Errorf("no project found with id: %d", project.ID)
 	}
 
 	return nil
 }
 
-// DeleteBlog removes a blog post
-func (r *BlogRepository) DeleteBlog(id int64) error {
+// DeleteProject removes a project post
+func (r *ProjectRepository) DeleteProject(id int64) error {
 	query := `
-        DELETE FROM blogs
+        DELETE FROM projects
         WHERE id = $1
     `
 
@@ -219,10 +219,10 @@ func (r *BlogRepository) DeleteBlog(id int64) error {
 	}
 
 	defer func() {
-		if cerr := closeStmt(stmt); cerr != nil {
+		if cerr := closeStmtProject(stmt); cerr != nil {
 			// If there's no error from the function, use the close error
-			if closeErr == nil {
-				closeErr = cerr
+			if closeErrProject == nil {
+				closeErrProject = cerr
 			}
 		}
 	}()
@@ -238,17 +238,17 @@ func (r *BlogRepository) DeleteBlog(id int64) error {
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("no blog found with id: %d", id)
+		return fmt.Errorf("no project found with id: %d", id)
 	}
 
 	return nil
 }
 
-// SearchBlogs searches for blogs by title, path, tags, or description
-func (r *BlogRepository) SearchBlogs(query string) ([]*models.Blog, error) {
+// SearchProjects searches for projects by title, path, tags, or description
+func (r *ProjectRepository) SearchProjects(query string) ([]*models.Project, error) {
 	searchQuery := `
         SELECT id, title, path, description, tags, views_count
-        FROM blogs
+        FROM projects
         WHERE LOWER(title) LIKE LOWER($1) 
            OR LOWER(path) LIKE LOWER($1)
            OR LOWER(tags) LIKE LOWER($1)
@@ -262,15 +262,15 @@ func (r *BlogRepository) SearchBlogs(query string) ([]*models.Blog, error) {
 	}
 
 	defer func() {
-		if cerr := closeStmt(stmt); cerr != nil {
+		if cerr := closeStmtProject(stmt); cerr != nil {
 			// If there's no error from the function, use the close error
-			if closeErr == nil {
-				closeErr = cerr
+			if closeErrProject == nil {
+				closeErrProject = cerr
 			}
 		}
 	}()
 
-	normalizedQuery := "%" + normalizeBlogString(query) + "%"
+	normalizedQuery := "%" + normalizeProjectString(query) + "%"
 	rows, err := stmt.Query(normalizedQuery)
 	if err != nil {
 		return nil, fmt.Errorf("query error: %w", err)
@@ -283,35 +283,35 @@ func (r *BlogRepository) SearchBlogs(query string) ([]*models.Blog, error) {
 		}
 	}(rows)
 
-	var blogs []*models.Blog
+	var projects []*models.Project
 	for rows.Next() {
-		blog := &models.Blog{}
+		project := &models.Project{}
 		err := rows.Scan(
-			&blog.ID,
-			&blog.Title,
-			&blog.Path,
-			&blog.Description,
-			&blog.Tags,
-			&blog.ViewsCount,
+			&project.ID,
+			&project.Title,
+			&project.Path,
+			&project.Description,
+			&project.Tags,
+			&project.ViewsCount,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan error: %w", err)
 		}
-		blogs = append(blogs, blog)
+		projects = append(projects, project)
 	}
 
 	if err = rows.Err(); err != nil {
 		return nil, fmt.Errorf("rows error: %w", err)
 	}
 
-	return blogs, nil
+	return projects, nil
 }
 
-// GetBlog retrieves a single blog by ID
-func (r *BlogRepository) GetBlog(id int64) (*models.Blog, error) {
+// GetProject retrieves a single project by ID
+func (r *ProjectRepository) GetProject(id int64) (*models.Project, error) {
 	query := `
         SELECT id, title, path, description, tags, views_count
-        FROM blogs
+        FROM projects
         WHERE id = $1
     `
 
@@ -321,22 +321,22 @@ func (r *BlogRepository) GetBlog(id int64) (*models.Blog, error) {
 	}
 
 	defer func() {
-		if cerr := closeStmt(stmt); cerr != nil {
+		if cerr := closeStmtProject(stmt); cerr != nil {
 			// If there's no error from the function, use the close error
-			if closeErr == nil {
-				closeErr = cerr
+			if closeErrProject == nil {
+				closeErrProject = cerr
 			}
 		}
 	}()
 
-	blog := &models.Blog{}
+	project := &models.Project{}
 	err = stmt.QueryRow(id).Scan(
-		&blog.ID,
-		&blog.Title,
-		&blog.Path,
-		&blog.Description,
-		&blog.Tags,
-		&blog.ViewsCount,
+		&project.ID,
+		&project.Title,
+		&project.Path,
+		&project.Description,
+		&project.Tags,
+		&project.ViewsCount,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -346,14 +346,14 @@ func (r *BlogRepository) GetBlog(id int64) (*models.Blog, error) {
 		return nil, fmt.Errorf("scan error: %w", err)
 	}
 
-	return blog, nil
+	return project, nil
 }
 
-// GetBlogByPath retrieves a blog by its path
-func (r *BlogRepository) GetBlogByPath(path string) (*models.Blog, error) {
+// GetProjectByPath retrieves a project by its path
+func (r *ProjectRepository) GetProjectByPath(path string) (*models.Project, error) {
 	query := `
         SELECT id, title, path, description, tags, views_count
-        FROM blogs
+        FROM projects
         WHERE path = $1
     `
 
@@ -363,22 +363,22 @@ func (r *BlogRepository) GetBlogByPath(path string) (*models.Blog, error) {
 	}
 
 	defer func() {
-		if cerr := closeStmt(stmt); cerr != nil {
+		if cerr := closeStmtProject(stmt); cerr != nil {
 			// If there's no error from the function, use the close error
-			if closeErr == nil {
-				closeErr = cerr
+			if closeErrProject == nil {
+				closeErrProject = cerr
 			}
 		}
 	}()
 
-	blog := &models.Blog{}
+	project := &models.Project{}
 	err = stmt.QueryRow(path).Scan(
-		&blog.ID,
-		&blog.Title,
-		&blog.Path,
-		&blog.Description,
-		&blog.Tags,
-		&blog.ViewsCount,
+		&project.ID,
+		&project.Title,
+		&project.Path,
+		&project.Description,
+		&project.Tags,
+		&project.ViewsCount,
 	)
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -388,13 +388,13 @@ func (r *BlogRepository) GetBlogByPath(path string) (*models.Blog, error) {
 		return nil, fmt.Errorf("query error: %w", err)
 	}
 
-	return blog, nil
+	return project, nil
 }
 
-// IncrementBlogViewCount Increment the view count
-func (r *BlogRepository) IncrementBlogViewCount(id int64) error {
+// IncrementViewCount increments the views_count for a project
+func (r *ProjectRepository) IncrementProjectViewCount(id int64) error {
 	query := `
-        UPDATE blogs 
+        UPDATE projects 
         SET views_count = views_count + 1
         WHERE id = $1
     `
@@ -431,7 +431,7 @@ func (r *BlogRepository) IncrementBlogViewCount(id int64) error {
 }
 
 // Helper function to handle statement closing
-func closeStmt(stmt *sql.Stmt) error {
+func closeStmtProject(stmt *sql.Stmt) error {
 	if err := stmt.Close(); err != nil {
 		return fmt.Errorf("error closing statement: %w", err)
 	}

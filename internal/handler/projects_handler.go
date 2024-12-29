@@ -3,38 +3,45 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-	"prosamik-backend/internal/data"
+	"prosamik-backend/internal/repository"
 	"prosamik-backend/pkg/models"
 )
 
 func HandleProjectsList(w http.ResponseWriter, r *http.Request) {
-	// 1. Check if the method is GET
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// 2. Initialize a slice to store project items
-	projects := make([]models.RepoListItem, 0, len(data.OrderedProjectsList))
+	// Initialize repository
+	projectRepo := repository.NewProjectRepository()
 
-	// 3. Iterate through the data in reverse order (newest first)
-	for i := len(data.OrderedProjectsList) - 1; i >= 0; i-- {
-		item := data.OrderedProjectsList[i]
-		projects = append(projects, models.RepoListItem{
-			Title:       item.Title,
-			RepoPath:    item.Info.Path,
-			Description: item.Info.Description,
-			Tags:        item.Info.Tags,
-			ViewsCount:  item.Info.ViewsCount,
+	// Fetch projects using repository
+	projects, err := projectRepo.GetAllProjects()
+	if err != nil {
+		http.Error(w, "Failed to fetch projects", http.StatusInternalServerError)
+		return
+	}
+
+	// Convert projects to RepoListItems format
+	repos := make([]models.RepoListItem, 0, len(projects))
+	for _, project := range projects {
+		repos = append(repos, models.RepoListItem{
+			Title:       project.Title,
+			RepoPath:    project.Path, // Path maps to RepoPath
+			Description: project.Description,
+			Tags:        project.Tags,
+			ViewsCount:  project.ViewsCount,
+			ID:          int(project.ID),
+			Type:        "project",
 		})
 	}
 
-	// 4. Create the response structure
+	// Create the response in required format
 	response := models.RepoListResponse{
-		Repos: projects,
+		Repos: repos,
 	}
 
-	// 5. Set header and encode response
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
