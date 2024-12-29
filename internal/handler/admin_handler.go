@@ -16,15 +16,6 @@ type PageData struct {
 	Error string
 }
 
-func HandleRoot(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/" {
-		http.Redirect(w, r, "/samik", http.StatusSeeOther)
-		return
-	}
-	// If it's any other unhandled path, return 404
-	http.NotFound(w, r)
-}
-
 func HandleAdminLoginUsingJWT(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
@@ -92,7 +83,7 @@ func HandleAdminLoginUsingJWT(w http.ResponseWriter, r *http.Request) {
 		})
 
 		// Successful login
-		http.Redirect(w, r, "/samik", http.StatusSeeOther)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 
 	default:
@@ -104,14 +95,14 @@ func HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	// Get username from JWT token for personalized welcome
 	cookie, err := r.Cookie("auth_token")
 	if err != nil {
-		http.Redirect(w, r, "/samik/login", http.StatusSeeOther)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
 	claims, err := auth.ValidateToken(cookie.Value)
 	if err != nil {
 		log.Printf("Token validation error: %v", err)
-		http.Redirect(w, r, "/samik/login", http.StatusSeeOther)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
@@ -142,5 +133,5 @@ func HandleAdminLogout(w http.ResponseWriter, r *http.Request) {
 	})
 
 	log.Printf("User logged out successfully")
-	http.Redirect(w, r, "/samik/login", http.StatusSeeOther)
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
