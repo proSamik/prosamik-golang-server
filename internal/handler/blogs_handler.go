@@ -28,10 +28,12 @@ func HandleBlogsList(w http.ResponseWriter, r *http.Request) {
 	for _, blog := range blogs {
 		repos = append(repos, models.RepoListItem{
 			Title:       blog.Title,
-			RepoPath:    blog.Path, // Path maps to RepoPath
+			RepoPath:    blog.Path,
 			Description: blog.Description,
 			Tags:        blog.Tags,
 			ViewsCount:  blog.ViewsCount,
+			ID:          int(blog.ID),
+			Type:        "blog",
 		})
 	}
 
