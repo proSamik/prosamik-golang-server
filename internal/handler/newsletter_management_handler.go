@@ -121,7 +121,7 @@ func HandleNewsletterAdd(w http.ResponseWriter, r *http.Request) {
 
 	email := normalizeEmail(r.FormValue("email"))
 	if email == "" {
-		err := templates.ExecuteTemplate(w, "form-message", struct{ Error string }{
+		err := templates.ExecuteTemplate(w, "newsletter-form-message", struct{ Error string }{
 			Error: "Email is required",
 		})
 		if err != nil {
@@ -136,7 +136,7 @@ func HandleNewsletterAdd(w http.ResponseWriter, r *http.Request) {
 	existing, err := repo.GetSubscriptionByEmail(email)
 	if err != nil {
 		log.Printf("Error checking existing email: %v", err)
-		err = templates.ExecuteTemplate(w, "form-message", struct{ Error string }{
+		err = templates.ExecuteTemplate(w, "newsletter-form-message", struct{ Error string }{
 			Error: "Internal server error",
 		})
 		if err != nil {
@@ -146,7 +146,7 @@ func HandleNewsletterAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if existing != nil {
-		err = templates.ExecuteTemplate(w, "form-message", struct{ Error string }{
+		err = templates.ExecuteTemplate(w, "newsletter-form-message", struct{ Error string }{
 			Error: "This email is already subscribed",
 		})
 		if err != nil {
@@ -164,7 +164,7 @@ func HandleNewsletterAdd(w http.ResponseWriter, r *http.Request) {
 	err = repo.AddSubscription(newsletter)
 	if err != nil {
 		log.Printf("Error adding subscription: %v", err)
-		err = templates.ExecuteTemplate(w, "form-message", struct{ Error string }{
+		err = templates.ExecuteTemplate(w, "newsletter-form-message", struct{ Error string }{
 			Error: "Failed to add subscription",
 		})
 		if err != nil {
@@ -173,7 +173,7 @@ func HandleNewsletterAdd(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = templates.ExecuteTemplate(w, "form-message", struct{ Error string }{})
+	err = templates.ExecuteTemplate(w, "newsletter-form-message", struct{ Error string }{})
 	if err != nil {
 		log.Printf("Template error: %v", err)
 	}
