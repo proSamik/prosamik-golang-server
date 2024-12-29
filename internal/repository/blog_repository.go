@@ -391,6 +391,45 @@ func (r *BlogRepository) GetBlogByPath(path string) (*models.Blog, error) {
 	return blog, nil
 }
 
+// IncrementBlogViewCount Increment the view count
+func (r *BlogRepository) IncrementBlogViewCount(id int64) error {
+	query := `
+        UPDATE blogs 
+        SET views_count = views_count + 1
+        WHERE id = $1
+    `
+
+	stmt, err := r.db.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("prepare statement error: %w", err)
+	}
+
+	defer func() {
+		if cerr := closeStmtProject(stmt); cerr != nil {
+			// If there's no error from the function, use the close error
+			if closeErrProject == nil {
+				closeErrProject = cerr
+			}
+		}
+	}()
+
+	result, err := stmt.Exec(id)
+	if err != nil {
+		return fmt.Errorf("update view count error: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected error: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no project found with id: %d", id)
+	}
+
+	return nil
+}
+
 // Helper function to handle statement closing
 func closeStmt(stmt *sql.Stmt) error {
 	if err := stmt.Close(); err != nil {
