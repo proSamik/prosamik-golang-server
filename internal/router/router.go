@@ -13,4 +13,7 @@ func SetupRoutes() {
 
 	// Register Blog Management routes
 	RegisterBlogManagementRoutes()
+
+	// Register Project Management routes
+	RegisterProjectManagementRoutes()
 }
