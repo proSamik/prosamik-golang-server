@@ -1,0 +1,201 @@
+{{define "newsletter-management"}}
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold mb-4">Newsletter Subscriptions Management</h2>
+
+        <!-- Search Form -->
+        <div class="mb-4">
+            <label for="search-email" class="block text-sm font-medium text-gray-700 mb-1">
+                Search Subscriptions
+            </label>
+            <input
+                    type="text"
+                    id="search-email"
+                    name="search"
+                    placeholder="Search by email..."
+                    hx-get="/newsletter/search"
+                    hx-trigger="keyup changed delay:500ms"
+                    hx-target="#newsletter-table"
+                    class="w-full p-2 border border-gray-300 rounded"
+            >
+        </div>
+
+        <!-- Add New Email Form -->
+        <div class="mb-6 p-4 border border-gray-200 rounded">
+            <h3 class="text-lg font-semibold mb-3">Add New Subscription</h3>
+            <form
+                    id="add-subscription-form"
+                    hx-post="/newsletter/add"
+                    hx-target="#form-message"
+                    class="flex flex-col gap-2"
+            >
+                <div class="flex-1">
+                    <label for="new-email" class="block text-sm font-medium text-gray-700 mb-1">
+                        Email Address
+                    </label>
+                    <div class="flex gap-2">
+                        <input
+                                type="email"
+                                id="new-email"
+                                name="email"
+                                required
+                                placeholder="Enter email address"
+                                class="flex-1 p-2 border border-gray-300 rounded"
+                        >
+                        <button
+                                type="submit"
+                                class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+                        >
+                            Add Subscription
+                        </button>
+                    </div>
+                    <div id="form-message" class="mt-2"></div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Table Section -->
+        <div id="newsletter-table" class="overflow-x-auto">
+            {{template "newsletter-table" .Data}}
+        </div>
+    </div>
+
+    <!-- Script to handle clearing input -->
+    <script>
+        htmx.on("htmx:afterRequest", function(evt) {
+            if (evt.detail.successful && evt.detail.path === "/newsletter/add") {
+                document.getElementById('new-email').value = '';
+            }
+        });
+    </script>
+{{end}}
+
+{{define "newsletter-table"}}
+    {{if not .Subscriptions}}
+        <div class="text-center py-8 text-gray-500">
+            Nothing to display :(
+        </div>
+    {{else}}
+        <table class="min-w-full bg-white border border-gray-300">
+            <thead>
+            <tr class="bg-gray-100">
+                <th scope="col" class="py-2 px-4 border-b text-left">Sl. No</th>
+                <th scope="col" class="py-2 px-4 border-b text-left">Email</th>
+                <th scope="col" class="py-2 px-4 border-b text-left">Registration Time</th>
+                <th scope="col" class="py-2 px-4 border-b text-left">Verified</th>
+                <th scope="col" class="py-2 px-4 border-b text-left">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{range $index, $subscription := .Subscriptions}}
+                <tr id="subscription-{{$subscription.ID}}">
+                    <td class="py-2 px-4 border-b">{{add $index 1}}</td>
+                    <td class="py-2 px-4 border-b" id="email-cell-{{$subscription.ID}}">
+                        {{$subscription.Email}}
+                    </td>
+                    <td class="py-2 px-4 border-b">{{$subscription.RegistrationTime}}</td>
+                    <td class="py-2 px-4 border-b">{{if $subscription.Verified}}Yes{{else}}No{{end}}</td>
+                    <td class="py-2 px-4 border-b flex gap-2">
+                        <button
+                                hx-get="/newsletter/edit/{{$subscription.ID}}"
+                                hx-target="#email-cell-{{$subscription.ID}}"
+                                hx-swap="innerHTML"
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                                aria-label="Edit subscription {{$subscription.ID}}"
+                        >
+                            Edit
+                        </button>
+                        <button
+                                hx-delete="/newsletter/delete/{{$subscription.ID}}"
+                                hx-confirm="Are you sure you want to delete this subscription?"
+                                hx-target="#subscription-{{$subscription.ID}}"
+                                hx-swap="outerHTML"
+                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                                aria-label="Delete subscription {{$subscription.ID}}"
+                        >
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
+    {{end}}
+{{end}}
+
+{{define "subscription-row"}}
+    <tr id="subscription-{{.ID}}">
+        <td class="py-2 px-4 border-b">{{.ID}}</td>
+        <td class="py-2 px-4 border-b" id="email-cell-{{.ID}}">
+            {{.Email}}
+        </td>
+        <td class="py-2 px-4 border-b">{{.RegistrationTime}}</td>
+        <td class="py-2 px-4 border-b">{{if .Verified}}Yes{{else}}No{{end}}</td>
+        <td class="py-2 px-4 border-b flex gap-2">
+            <button
+                    hx-get="/newsletter/edit/{{.ID}}"
+                    hx-target="#email-cell-{{.ID}}"
+                    hx-swap="innerHTML"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                    aria-label="Edit subscription {{.ID}}"
+            >
+                Edit
+            </button>
+            <button
+                    hx-delete="/newsletter/delete/{{.ID}}"
+                    hx-confirm="Are you sure you want to delete this subscription?"
+                    hx-target="#subscription-{{.ID}}"
+                    hx-swap="outerHTML"
+                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                    aria-label="Delete subscription {{.ID}}"
+            >
+                Delete
+            </button>
+        </td>
+    </tr>
+{{end}}
+
+{{define "email-edit"}}
+    <div class="flex gap-2">
+        <label for="email-input-{{.ID}}"><input
+                type="email"
+                id="email-input-{{.ID}}"
+                name="email"
+                value="{{.Email}}"
+                class="flex-1 border border-gray-300 rounded px-2 py-1"
+        ></label>
+        <button
+                hx-put="/newsletter/update/{{.ID}}"
+                hx-include="#email-input-{{.ID}}"
+                hx-target="#email-cell-{{.ID}}"
+                hx-swap="innerHTML"
+                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
+                aria-label="Save changes for subscription {{.ID}}"
+        >
+            Save
+        </button>
+        <button
+                hx-get="/newsletter/cancel-edit/{{.ID}}"
+                hx-target="#email-cell-{{.ID}}"
+                hx-swap="innerHTML"
+                class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded"
+                aria-label="Cancel editing subscription {{.ID}}"
+        >
+            Cancel
+        </button>
+    </div>
+{{end}}
+
+{{define "form-message"}}
+    {{if .Error}}
+        <p class="text-red-500 text-sm">{{.Error}}</p>
+        <script>
+            document.getElementById('new-email').value = '';
+        </script>
+    {{else}}
+        <p class="text-green-500 text-sm">Email added successfully!</p>
+        <script>
+            document.getElementById('new-email').value = '';
+        </script>
+        <div hx-trigger="load" hx-get="/newsletter/search" hx-target="#newsletter-table"></div>
+    {{end}}
+{{end}}

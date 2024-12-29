@@ -1,4 +1,5 @@
 .
+|-- Dockerfile
 |-- LICENSE
 |-- README.md
 |-- cmd
@@ -8,25 +9,44 @@
 |-- go.sum
 |-- internal
 |   |-- auth
-|   |   `-- github_auth.go
+|   |   |-- github_auth.go
+|   |   `-- jwt_auth.go
 |   |-- data
-|   |   `-- repos.go
+|   |   |-- blogs_list.go
+|   |   `-- projects_list.go
+|   |-- database
+|   |   |-- migrations
+|   |   |   |-- 001_create_newsletter_subscriptions.down.sql
+|   |   |   `-- 001_create_newsletter_subscriptions.up.sql
+|   |   `-- postgres.go
 |   |-- fetcher
 |   |   `-- markdown_fetcher.go
 |   |-- handler
+|   |   |-- admin_handler.go
+|   |   |-- blogs_handler.go
 |   |   |-- feedback_handler.go
 |   |   |-- markdown_handler.go
 |   |   |-- newsletter_handler.go
-|   |   `-- repos_handler.go
+|   |   `-- projects_handler.go
 |   |-- middleware
-|   |   `-- middleware.go
+|   |   |-- auth_middleware.go
+|   |   |-- middleware.go
+|   |   `-- rate_limiter.go
 |   |-- parser
 |   |   `-- markdown_to_html.go
-|   `-- router
-|       `-- router.go
+|   |-- repository
+|   |   `-- newsletter_repository.go
+|   |-- router
+|   |   `-- router.go
+|   `-- templates
+|       |-- base.html
+|       |-- dashboard.html
+|       |-- login.html
+|       `-- newsletter_management.html
 |-- pkg
 |   `-- models
-|       `-- models.go
+|       |-- models.go
+|       `-- newsletter.go
 `-- project-structure.txt
 
-13 directories, 17 files
+17 directories, 33 files

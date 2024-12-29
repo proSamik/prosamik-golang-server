@@ -1,35 +1,40 @@
 {{define "base"}}
-<!DOCTYPE html>
-<html lang="en-US">
-<head>
-    <title>Admin Panel</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100">
-{{if eq .Page "login"}}
-{{template "login-content" .}}
-{{else}}
-<nav class="bg-white shadow-lg">
-    <div class="max-w-6xl mx-auto px-4">
-        <div class="flex justify-between items-center h-16">
-            <div class="flex space-x-4">
-                <a href="/samik" class="text-gray-700 hover:text-gray-900">Home</a>
+    <!DOCTYPE html>
+    <html lang="en-US">
+    <head>
+        <title>Admin Panel</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    </head>
+    <body class="bg-gray-100" hx-headers='{"X-Requested-With": "XMLHttpRequest"}'>
+    {{if eq .Page "login"}}
+        {{template "login-content" .}}
+    {{else}}
+        <nav class="bg-white shadow-lg">
+            <div class="max-w-6xl mx-auto px-4">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex space-x-4">
+                        <a href="/" class="text-gray-700 hover:text-gray-900">Home</a>
+                    </div>
+                    <div>
+                        <form action="/logout" method="POST">
+                            <button type="submit"
+                                    class="text-red-600 hover:text-red-800">
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <div>
-                <form action="/samik/logout" method="POST">
-                    <button type="submit"
-                            class="text-red-600 hover:text-red-800">
-                        Logout
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</nav>
-<main class="max-w-6xl mx-auto mt-6 px-4">
-    {{template "dashboard-content" .}}
-</main>
-{{end}}
-</body>
-</html>
+        </nav>
+        <main class="max-w-6xl mx-auto mt-6 px-4">
+            {{if eq .Page "dashboard"}}
+                {{template "dashboard-content" .}}
+            {{else if eq .Page "newsletter"}}
+                {{template "newsletter-management" .}}
+            {{end}}
+        </main>
+    {{end}}
+    </body>
+    </html>
 {{end}}

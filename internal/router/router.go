@@ -13,11 +13,8 @@ func SetupRoutes() {
 	// Create a rate limiter that allows 5 requests per minute
 	rateLimiter := middleware.NewRateLimiter(60, time.Minute)
 
-	// Root route handler
-	http.HandleFunc("/", handler.HandleRoot)
-
 	// Admin routes
-	http.HandleFunc("/samik/login",
+	http.HandleFunc("/login",
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
 				handler.HandleAdminLoginUsingJWT,
@@ -25,7 +22,7 @@ func SetupRoutes() {
 		),
 	)
 
-	http.HandleFunc("/samik/logout",
+	http.HandleFunc("/logout",
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
 				middleware.AuthMiddleware(
@@ -35,7 +32,7 @@ func SetupRoutes() {
 		),
 	)
 
-	http.HandleFunc("/samik",
+	http.HandleFunc("/",
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
 				middleware.AuthMiddleware(
@@ -88,9 +85,86 @@ func SetupRoutes() {
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
 				rateLimiter.RateLimitMiddleware(
-					handler.HandleNewsletter,
+					handler.HandleNewsletterSignup,
 				),
 			),
 		),
 	)
+
+	// Newsletter management route
+	http.HandleFunc("/newsletter/management",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterManagement,
+				),
+			),
+		),
+	)
+
+	// Newsletter search route
+	http.HandleFunc("/newsletter/search",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterSearch,
+				),
+			),
+		),
+	)
+
+	// Newsletter add route
+	http.HandleFunc("/newsletter/add",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterAdd,
+				),
+			),
+		),
+	)
+
+	// Newsletter update route
+	http.HandleFunc("/newsletter/update/",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterUpdate,
+				),
+			),
+		),
+	)
+
+	// Newsletter edit mode routes
+	http.HandleFunc("/newsletter/edit/",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterEdit,
+				),
+			),
+		),
+	)
+
+	http.HandleFunc("/newsletter/cancel-edit/",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterCancelEdit,
+				),
+			),
+		),
+	)
+
+	// Newsletter delete route
+	http.HandleFunc("/newsletter/delete/",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterDelete,
+				),
+			),
+		),
+	)
+
 }
