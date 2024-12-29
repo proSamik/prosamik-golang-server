@@ -19,13 +19,22 @@
             >
         </div>
 
+        <!-- Toggle Button for Add New Blog Form -->
+        <button
+                onclick="toggleAddBlogForm()"
+                class="mb-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                id="toggleFormBtn"
+        >
+            ⬆️ Hide Blog Form
+        </button>
+
         <!-- Add New Blog Form -->
-        <div class="mb-6 p-4 border border-gray-200 rounded">
+        <div id="addBlogForm"  class="mb-6 p-4 border border-gray-200 rounded">
             <h3 class="text-lg font-semibold mb-3">Add New Blog Post</h3>
             <form
                     id="add-blog-form"
                     hx-post="/blog/management/add"
-                    hx-target="#form-message"
+                    hx-target="#blog-form-message"
                     class="space-y-4"
             >
                 <div class="grid grid-cols-2 gap-4">
@@ -49,6 +58,7 @@
                                 required
                                 placeholder="Enter blog path"
                                 class="w-full p-2 border border-gray-300 rounded"
+                                autocomplete="off"
                         >
                     </div>
                 </div>
@@ -70,6 +80,7 @@
                             name="tags"
                             placeholder="Enter tags (comma-separated)"
                             class="w-full p-2 border border-gray-300 rounded"
+                            autocomplete="off"
                     >
                 </div>
                 <div class="flex justify-between items-center">
@@ -79,7 +90,7 @@
                     >
                         Add Blog Post
                     </button>
-                    <div id="form-message" class="ml-4"></div>
+                    <div id="blog-form-message" class="ml-4"></div>
                 </div>
             </form>
         </div>
@@ -97,7 +108,43 @@
                 htmx.trigger("#search-blog", "keyup");
             }
         });
+
+        // Function to toggle the Add Blog Form
+        function toggleAddBlogForm() {
+            const form = document.getElementById('addBlogForm');
+            const btn = document.getElementById('toggleFormBtn');
+            form.classList.toggle('hidden');
+            const isHidden = form.classList.contains('hidden');
+
+            // Save the state to localStorage
+            localStorage.setItem('blogFormHidden', isHidden);
+
+            // Update button text
+            btn.textContent = isHidden ? '⬇️ Show Blog Form' : '⬆️ Hide Blog Form';
+        }
+
+        // Function to initialize form state on page load
+        function initializeFormState() {
+            const form = document.getElementById('addBlogForm');
+            const btn = document.getElementById('toggleFormBtn');
+
+            // Get saved state from localStorage
+            const isHidden = localStorage.getItem('blogFormHidden') === 'true';
+
+            // Apply saved state
+            if (isHidden) {
+                form.classList.add('hidden');
+                btn.textContent = '⬇️ Show Blog Form';
+            } else {
+                form.classList.remove('hidden');
+                btn.textContent = '⬆️ Hide Blog Form';
+            }
+        }
+
+        // Initialize state when page loads
+        document.addEventListener('DOMContentLoaded', initializeFormState);
     </script>
+
 {{end}}
 
 {{define "blog-list"}}
@@ -115,7 +162,15 @@
                             <h3 class="font-semibold text-lg">{{.Title}}</h3>
                             <p class="text-gray-600">{{.Description}}</p>
                             <div class="flex flex-wrap gap-4 text-sm text-gray-500">
-                                <span>Path: {{.Path}}</span>
+                                <span class="group relative">
+                                    Path:
+                                    <a href="{{.Path}}" target="_blank" class="hover:text-blue-600 relative">
+                                        <span class="inline-block">...{{slice .Path (sub (len .Path) 10)}}</span>
+                                        <span class="absolute left-0 -top-8 bg-black text-white p-1 rounded text-xs invisible group-hover:visible whitespace-nowrap z-10">
+                                            {{.Path}}
+                                        </span>
+                                    </a>
+                                </span>
                                 <span>Tags: {{.Tags}}</span>
                                 <span>Views: {{.ViewsCount}}</span>
                             </div>
