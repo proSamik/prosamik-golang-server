@@ -156,13 +156,13 @@
 
 {{define "email-edit"}}
     <div class="flex gap-2">
-        <input
+        <label for="email-input-{{.ID}}"><input
                 type="email"
                 id="email-input-{{.ID}}"
                 name="email"
                 value="{{.Email}}"
                 class="flex-1 border border-gray-300 rounded px-2 py-1"
-        >
+        ></label>
         <button
                 hx-put="/newsletter/update/{{.ID}}"
                 hx-include="#email-input-{{.ID}}"
