@@ -96,3 +96,84 @@ func (r *NewsletterRepository) CreateSubscription(email string) (*models.Newslet
 
 	return subscription, nil
 }
+
+func (r *NewsletterRepository) GetAllSubscriptions() ([]*models.Newsletter, error) {
+	query := `
+        SELECT id, email, registration_timestamp, verified
+        FROM newsletter_subscriptions
+        ORDER BY registration_timestamp ASC
+    `
+
+	stmt, err := r.db.Prepare(query)
+	if err != nil {
+		return nil, fmt.Errorf("prepare statement error: %w", err)
+	}
+
+	defer func() {
+		if closeErr := stmt.Close(); closeErr != nil {
+			err = fmt.Errorf("statement close error: %v: %w", closeErr, err)
+		}
+	}()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		return nil, fmt.Errorf("query error: %w", err)
+	}
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			err = fmt.Errorf("rows close error: %v: %w", err, err)
+		}
+	}(rows)
+
+	var subscriptions []*models.Newsletter
+	for rows.Next() {
+		subscription := &models.Newsletter{}
+		err := rows.Scan(
+			&subscription.ID,
+			&subscription.Email,
+			&subscription.RegistrationTime,
+			&subscription.Verified,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan error: %w", err)
+		}
+		subscriptions = append(subscriptions, subscription)
+	}
+
+	return subscriptions, nil
+}
+
+func (r *NewsletterRepository) DeleteSubscription(id int64) error {
+	query := `
+        DELETE FROM newsletter_subscriptions
+        WHERE id = $1
+    `
+
+	stmt, err := r.db.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("prepare statement error: %w", err)
+	}
+
+	defer func() {
+		if closeErr := stmt.Close(); closeErr != nil {
+			err = fmt.Errorf("statement close error: %v: %w", closeErr, err)
+		}
+	}()
+
+	result, err := stmt.Exec(id)
+	if err != nil {
+		return fmt.Errorf("delete error: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected error: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no subscription found with id: %d", id)
+	}
+
+	return nil
+}
