@@ -8,7 +8,11 @@ import (
 	"prosamik-backend/internal/auth"
 )
 
-var templates = template.Must(template.ParseGlob("internal/templates/*.html"))
+var templates = template.Must(template.New("").Funcs(template.FuncMap{
+	"add": func(a, b int) int {
+		return a + b
+	},
+}).ParseGlob("internal/templates/*.html"))
 
 type PageData struct {
 	Page  string
