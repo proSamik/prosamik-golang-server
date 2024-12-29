@@ -12,6 +12,15 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{
 	"add": func(a, b int) int {
 		return a + b
 	},
+	"slice": func(s string, i int) string {
+		if i < 0 {
+			i = 0
+		}
+		return s[i:]
+	},
+	"sub": func(a, b int) int {
+		return a - b
+	},
 }).ParseGlob("internal/templates/*.html"))
 
 type PageData struct {

@@ -6,5 +6,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="htmx.org" level="application" />
+    <orderEntry type="library" name="hyperscript.org" level="application" />
   </component>
 </module>

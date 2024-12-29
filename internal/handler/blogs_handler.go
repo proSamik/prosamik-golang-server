@@ -3,7 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-	"prosamik-backend/internal/data"
+	"prosamik-backend/internal/repository"
 	"prosamik-backend/pkg/models"
 )
 
@@ -13,19 +13,29 @@ func HandleBlogsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	repos := make([]models.RepoListItem, 0, len(data.OrderedBlogsList))
+	// Initialize repository
+	blogRepo := repository.NewBlogRepository()
 
-	for i := len(data.OrderedBlogsList) - 1; i >= 0; i-- {
-		item := data.OrderedBlogsList[i]
+	// Fetch blogs using repository
+	blogs, err := blogRepo.GetAllBlogs()
+	if err != nil {
+		http.Error(w, "Failed to fetch blogs", http.StatusInternalServerError)
+		return
+	}
+
+	// Convert blogs to RepoListItems format
+	repos := make([]models.RepoListItem, 0, len(blogs))
+	for _, blog := range blogs {
 		repos = append(repos, models.RepoListItem{
-			Title:       item.Title,
-			RepoPath:    item.Info.Path,
-			Description: item.Info.Description,
-			Tags:        item.Info.Tags,
-			ViewsCount:  item.Info.ViewsCount,
+			Title:       blog.Title,
+			RepoPath:    blog.Path, // Path maps to RepoPath
+			Description: blog.Description,
+			Tags:        blog.Tags,
+			ViewsCount:  blog.ViewsCount,
 		})
 	}
 
+	// Create the response in required format
 	response := models.RepoListResponse{
 		Repos: repos,
 	}

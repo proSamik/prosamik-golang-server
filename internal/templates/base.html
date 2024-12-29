@@ -5,6 +5,7 @@
         <title>Admin Panel</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+        <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
     </head>
     <body class="bg-gray-100" hx-headers='{"X-Requested-With": "XMLHttpRequest"}'>
     {{if eq .Page "login"}}
@@ -32,6 +33,8 @@
                 {{template "dashboard-content" .}}
             {{else if eq .Page "newsletter"}}
                 {{template "newsletter-management" .}}
+            {{else if eq .Page "blog-management"}}
+                {{template "blog-management" .}}
             {{end}}
         </main>
     {{end}}
