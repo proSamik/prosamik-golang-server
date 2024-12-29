@@ -102,6 +102,60 @@ func SetupRoutes() {
 		),
 	)
 
+	// Newsletter search route
+	http.HandleFunc("/newsletter/search",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterSearch,
+				),
+			),
+		),
+	)
+
+	// Newsletter add route
+	http.HandleFunc("/newsletter/add",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterAdd,
+				),
+			),
+		),
+	)
+
+	// Newsletter update route
+	http.HandleFunc("/newsletter/update/",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterUpdate,
+				),
+			),
+		),
+	)
+
+	// Newsletter edit mode routes
+	http.HandleFunc("/newsletter/edit/",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterEdit,
+				),
+			),
+		),
+	)
+
+	http.HandleFunc("/newsletter/cancel-edit/",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterCancelEdit,
+				),
+			),
+		),
+	)
+
 	// Newsletter delete route
 	http.HandleFunc("/newsletter/delete/",
 		middleware.CORSMiddleware(
