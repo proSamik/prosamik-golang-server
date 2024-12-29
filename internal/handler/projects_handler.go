@@ -32,6 +32,8 @@ func HandleProjectsList(w http.ResponseWriter, r *http.Request) {
 			Description: project.Description,
 			Tags:        project.Tags,
 			ViewsCount:  project.ViewsCount,
+			ID:          int(project.ID),
+			Type:        "project",
 		})
 	}
 
