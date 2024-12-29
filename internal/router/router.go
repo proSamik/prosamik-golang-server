@@ -13,11 +13,8 @@ func SetupRoutes() {
 	// Create a rate limiter that allows 5 requests per minute
 	rateLimiter := middleware.NewRateLimiter(60, time.Minute)
 
-	// Root route handler
-	http.HandleFunc("/", handler.HandleRoot)
-
 	// Admin routes
-	http.HandleFunc("/samik/login",
+	http.HandleFunc("/login",
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
 				handler.HandleAdminLoginUsingJWT,
@@ -25,7 +22,7 @@ func SetupRoutes() {
 		),
 	)
 
-	http.HandleFunc("/samik/logout",
+	http.HandleFunc("/logout",
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
 				middleware.AuthMiddleware(
@@ -35,7 +32,7 @@ func SetupRoutes() {
 		),
 	)
 
-	http.HandleFunc("/samik",
+	http.HandleFunc("/",
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
 				middleware.AuthMiddleware(
@@ -93,4 +90,27 @@ func SetupRoutes() {
 			),
 		),
 	)
+
+	// Newsletter management route
+	http.HandleFunc("/newsletter/management",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterManagement,
+				),
+			),
+		),
+	)
+
+	// Newsletter delete route
+	http.HandleFunc("/newsletter/delete/",
+		middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(
+				middleware.AuthMiddleware(
+					handler.HandleNewsletterDelete,
+				),
+			),
+		),
+	)
+
 }
