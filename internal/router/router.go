@@ -11,4 +11,6 @@ func SetupRoutes() {
 	// Register Newsletter Management routes
 	RegisterNewsletterManagementRoutes()
 
+	// Register Blog Management routes
+	RegisterBlogManagementRoutes()
 }
