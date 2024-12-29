@@ -103,7 +103,7 @@
 {{define "blog-list"}}
     {{if not .Blogs}}
         <div class="text-center py-8 text-gray-500">
-            No blog posts found
+            No blog posts found :)
         </div>
     {{else}}
         <div class="grid grid-cols-1 gap-4">
@@ -111,12 +111,12 @@
                 <div id="blog-{{.ID}}" class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                     <div class="flex justify-between items-start">
                         <!-- Blog Content -->
-                        <div class="space-y-2 flex-grow">
-                            <h3 class="font-semibold text-lg" id="title-cell-{{.ID}}">{{.Title}}</h3>
-                            <p class="text-gray-600" id="description-cell-{{.ID}}">{{.Description}}</p>
+                        <div class="space-y-2 flex-grow" id="blog-content-{{.ID}}">
+                            <h3 class="font-semibold text-lg">{{.Title}}</h3>
+                            <p class="text-gray-600">{{.Description}}</p>
                             <div class="flex flex-wrap gap-4 text-sm text-gray-500">
-                                <span id="path-cell-{{.ID}}">Path: {{.Path}}</span>
-                                <span id="tags-cell-{{.ID}}">Tags: {{.Tags}}</span>
+                                <span>Path: {{.Path}}</span>
+                                <span>Tags: {{.Tags}}</span>
                                 <span>Views: {{.ViewsCount}}</span>
                             </div>
                         </div>
@@ -124,32 +124,11 @@
                         <!-- Action Buttons -->
                         <div class="flex gap-2 ml-4">
                             <button
-                                    hx-get="/blog/management/edit/{{.ID}}/title"
-                                    hx-target="#title-cell-{{.ID}}"
+                                    hx-get="/blog/management/edit/{{.ID}}"
+                                    hx-target="#blog-content-{{.ID}}"
                                     class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
                             >
-                                Edit Title
-                            </button>
-                            <button
-                                    hx-get="/blog/management/edit/{{.ID}}/path"
-                                    hx-target="#path-cell-{{.ID}}"
-                                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
-                            >
-                                Edit Path
-                            </button>
-                            <button
-                                    hx-get="/blog/management/edit/{{.ID}}/description"
-                                    hx-target="#description-cell-{{.ID}}"
-                                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
-                            >
-                                Edit Description
-                            </button>
-                            <button
-                                    hx-get="/blog/management/edit/{{.ID}}/tags"
-                                    hx-target="#tags-cell-{{.ID}}"
-                                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
-                            >
-                                Edit Tags
+                                Edit
                             </button>
                             <button
                                     hx-delete="/blog/management/delete/{{.ID}}"
@@ -168,32 +147,76 @@
     {{end}}
 {{end}}
 
-{{define "edit-input"}}
-    <div class="flex gap-2">
-        <label for="edit-input-{{.ID}}"></label><input
-                type="text"
-                id="edit-input-{{.ID}}"
-                name="{{.Field}}"
-                value="{{.Value}}"
-                class="flex-1 border border-gray-300 rounded px-2 py-1"
-        >
-        <button
-                hx-put="/blog/management/update/{{.ID}}"
-                hx-include="#edit-input-{{.ID}}"
-                hx-target="{{.Target}}"
-                hx-swap="innerHTML"
-                class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
-        >
-            Save
-        </button>
-        <button
-                hx-get="/blog/management/cancel-edit/{{.ID}}/{{.Field}}"
-                hx-target="{{.Target}}"
-                hx-swap="innerHTML"
-                class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded"
-        >
-            Cancel
-        </button>
+{{define "blog-content"}}
+    <div class="space-y-2 flex-grow">
+        <h3 class="font-semibold text-lg">{{.Title}}</h3>
+        <p class="text-gray-600">{{.Description}}</p>
+        <div class="flex flex-wrap gap-4 text-sm text-gray-500">
+            <span>Path: {{.Path}}</span>
+            <span>Tags: {{.Tags}}</span>
+            <span>Views: {{.ViewsCount}}</span>
+        </div>
+    </div>
+{{end}}
+
+{{define "edit-form"}}
+    <div class="space-y-4">
+        <div>
+            <label for="title-{{.ID}}" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input
+                    type="text"
+                    id="title-{{.ID}}"
+                    name="title"
+                    value="{{.Title}}"
+                    class="w-full p-2 border border-gray-300 rounded"
+            >
+        </div>
+        <div>
+            <label for="description-{{.ID}}" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+                    id="description-{{.ID}}"
+                    name="description"
+                    rows="3"
+                    class="w-full p-2 border border-gray-300 rounded"
+            >{{.Description}}</textarea>
+        </div>
+        <div>
+            <label for="path-{{.ID}}" class="block text-sm font-medium text-gray-700 mb-1">Path</label>
+            <input
+                    type="text"
+                    id="path-{{.ID}}"
+                    name="path"
+                    value="{{.Path}}"
+                    class="w-full p-2 border border-gray-300 rounded"
+            >
+        </div>
+        <div>
+            <label for="tags-{{.ID}}" class="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+            <input
+                    type="text"
+                    id="tags-{{.ID}}"
+                    name="tags"
+                    value="{{.Tags}}"
+                    class="w-full p-2 border border-gray-300 rounded"
+            >
+        </div>
+        <div class="flex gap-2">
+            <button
+                    hx-put="/blog/management/update/{{.ID}}"
+                    hx-include="#title-{{.ID}}, #description-{{.ID}}, #path-{{.ID}}, #tags-{{.ID}}"
+                    hx-target="#blog-content-{{.ID}}"
+                    class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
+            >
+                Save
+            </button>
+            <button
+                    hx-get="/blog/management/cancel-edit/{{.ID}}"
+                    hx-target="#blog-content-{{.ID}}"
+                    class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded"
+            >
+                Cancel
+            </button>
+        </div>
     </div>
 {{end}}
 

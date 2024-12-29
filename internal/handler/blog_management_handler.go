@@ -130,28 +130,26 @@ func HandleBlogAdd(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// HandleBlogEdit handles rendering edit inputs for a specific blog field
+// HandleBlogEdit handles rendering the edit form for a blog post
 func HandleBlogEdit(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Extract blog ID and field from URL
+	// Extract blog ID from URL
 	segments := strings.Split(r.URL.Path, "/")
-	if len(segments) < 6 {
+	if len(segments) < 4 {
 		http.Error(w, "Invalid URL", http.StatusBadRequest)
 		return
 	}
 
-	id, err := strconv.ParseInt(segments[len(segments)-2], 10, 64)
+	id, err := strconv.ParseInt(segments[len(segments)-1], 10, 64)
 	if err != nil {
 		log.Printf("Invalid blog ID: %v", err)
 		http.Error(w, "Invalid blog ID", http.StatusBadRequest)
 		return
 	}
-
-	field := segments[len(segments)-1]
 
 	repo := repository.NewBlogRepository()
 	blog, err := repo.GetBlog(id)
@@ -166,42 +164,15 @@ func HandleBlogEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Prepare data for edit input template
-	editData := struct {
-		ID     int64
-		Field  string
-		Value  string
-		Target string
-	}{
-		ID:     id,
-		Field:  field,
-		Target: fmt.Sprintf("#%s-cell-%d", field, id),
-	}
-
-	// Get the correct value based on the field
-	switch field {
-	case "title":
-		editData.Value = blog.Title
-	case "path":
-		editData.Value = blog.Path
-	case "description":
-		editData.Value = blog.Description
-	case "tags":
-		editData.Value = blog.Tags
-	default:
-		http.Error(w, "Invalid field", http.StatusBadRequest)
-		return
-	}
-
-	// Render edit input template
-	err = templates.ExecuteTemplate(w, "edit-input", editData)
+	// Render edit form template
+	err = templates.ExecuteTemplate(w, "edit-form", blog)
 	if err != nil {
 		log.Printf("Template error: %v", err)
 		http.Error(w, "Failed to render template", http.StatusInternalServerError)
 	}
 }
 
-// HandleBlogUpdate handles updating a specific blog field
+// HandleBlogUpdate handles updating a blog post
 func HandleBlogUpdate(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -209,7 +180,13 @@ func HandleBlogUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extract blog ID from URL
-	id, err := getBlogIDFromPath(r.URL.Path)
+	segments := strings.Split(r.URL.Path, "/")
+	if len(segments) < 4 {
+		http.Error(w, "Invalid URL", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.ParseInt(segments[len(segments)-1], 10, 64)
 	if err != nil {
 		log.Printf("Invalid blog ID: %v", err)
 		http.Error(w, "Invalid blog ID", http.StatusBadRequest)
@@ -217,8 +194,56 @@ func HandleBlogUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse form data
-	if err := r.ParseForm(); err != nil {
+	err = r.ParseForm()
+	if err != nil {
+		log.Printf("Error parsing form: %v", err)
 		http.Error(w, "Invalid form data", http.StatusBadRequest)
+		return
+	}
+
+	// Update blog in repository
+	blog := &models.Blog{
+		ID:          id,
+		Title:       r.FormValue("title"),
+		Path:        r.FormValue("path"),
+		Description: r.FormValue("description"),
+		Tags:        r.FormValue("tags"),
+	}
+
+	repo := repository.NewBlogRepository()
+	err = repo.UpdateBlog(blog)
+	if err != nil {
+		log.Printf("Error updating blog: %v", err)
+		http.Error(w, "Failed to update blog", http.StatusInternalServerError)
+		return
+	}
+
+	// Return updated blog content
+	err = templates.ExecuteTemplate(w, "blog-content", blog)
+	if err != nil {
+		log.Printf("Template error: %v", err)
+		http.Error(w, "Failed to render template", http.StatusInternalServerError)
+	}
+}
+
+// HandleBlogCancelEdit handles canceling blog edit
+func HandleBlogCancelEdit(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract blog ID from URL
+	segments := strings.Split(r.URL.Path, "/")
+	if len(segments) < 4 {
+		http.Error(w, "Invalid URL", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.ParseInt(segments[len(segments)-1], 10, 64)
+	if err != nil {
+		log.Printf("Invalid blog ID: %v", err)
+		http.Error(w, "Invalid blog ID", http.StatusBadRequest)
 		return
 	}
 
@@ -235,49 +260,11 @@ func HandleBlogUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the first form key
-	var fieldName string
-	for key := range r.Form {
-		fieldName = key
-		break
-	}
-
-	// Update the specific field
-	fieldValue := strings.TrimSpace(r.FormValue(fieldName))
-	switch fieldName {
-	case "title":
-		if fieldValue == "" {
-			http.Error(w, "Title cannot be empty", http.StatusBadRequest)
-			return
-		}
-		blog.Title = fieldValue
-	case "path":
-		if fieldValue == "" {
-			http.Error(w, "Path cannot be empty", http.StatusBadRequest)
-			return
-		}
-		blog.Path = fieldValue
-	case "description":
-		blog.Description = fieldValue
-	case "tags":
-		blog.Tags = fieldValue
-	default:
-		http.Error(w, "Invalid field", http.StatusBadRequest)
-		return
-	}
-
-	// Update the blog
-	err = repo.UpdateBlog(blog)
+	// Return original blog content
+	err = templates.ExecuteTemplate(w, "blog-content", blog)
 	if err != nil {
-		log.Printf("Error updating blog: %v", err)
-		http.Error(w, "Failed to update blog", http.StatusInternalServerError)
-		return
-	}
-
-	// Return the updated value
-	_, err = w.Write([]byte(fieldValue))
-	if err != nil {
-		log.Printf("Error writing response: %v", err)
+		log.Printf("Template error: %v", err)
+		http.Error(w, "Failed to render template", http.StatusInternalServerError)
 	}
 }
 
@@ -306,64 +293,6 @@ func HandleBlogDelete(w http.ResponseWriter, r *http.Request) {
 
 	// Return successful status
 	w.WriteHeader(http.StatusOK)
-}
-
-// HandleBlogCancelEdit handles canceling edit for a specific blog field
-func HandleBlogCancelEdit(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Extract blog ID and field from URL
-	segments := strings.Split(r.URL.Path, "/")
-	if len(segments) < 5 {
-		http.Error(w, "Invalid URL", http.StatusBadRequest)
-		return
-	}
-
-	id, err := strconv.ParseInt(segments[4], 10, 64)
-	if err != nil {
-		log.Printf("Invalid blog ID: %v", err)
-		http.Error(w, "Invalid blog ID", http.StatusBadRequest)
-		return
-	}
-
-	field := segments[5]
-
-	repo := repository.NewBlogRepository()
-	blog, err := repo.GetBlog(id)
-	if err != nil {
-		log.Printf("Error fetching blog: %v", err)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	if blog == nil {
-		http.Error(w, "Blog not found", http.StatusNotFound)
-		return
-	}
-
-	// Return the original value based on the field
-	var value string
-	switch field {
-	case "title":
-		value = blog.Title
-	case "path":
-		value = blog.Path
-	case "description":
-		value = blog.Description
-	case "tags":
-		value = blog.Tags
-	default:
-		http.Error(w, "Invalid field", http.StatusBadRequest)
-		return
-	}
-
-	_, err = w.Write([]byte(value))
-	if err != nil {
-		log.Printf("Error writing response: %v", err)
-	}
 }
 
 // Helper function to render form errors
