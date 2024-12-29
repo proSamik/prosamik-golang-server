@@ -85,7 +85,7 @@ func SetupRoutes() {
 		middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
 				rateLimiter.RateLimitMiddleware(
-					handler.HandleNewsletter,
+					handler.HandleNewsletterSignup,
 				),
 			),
 		),
