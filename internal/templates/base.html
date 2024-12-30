@@ -37,6 +37,8 @@
                 {{template "blog-management" .}}
             {{else if eq .Page "project-management"}}
                 {{template "project-management" .}}
+            {{else if eq .Page "analytics-management"}}
+                {{template "analytics-management" .}}
             {{end}}
         </main>
     {{end}}
