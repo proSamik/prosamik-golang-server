@@ -4,10 +4,8 @@
     <head>
         <title id="pageTitle">Admin Panel</title>
         <script>
-            // Set page title to current domain with port if exists
             function setDomainTitle() {
-                // window.location.host includes both domain and port (e.g., "backend.prosamik.com:3000")
-                document.getElementById('pageTitle').textContent = window.location.host;
+                document.getElementById('pageTitle').textContent = `${window.location.host}`;
             }
             document.addEventListener('DOMContentLoaded', setDomainTitle);
         </script>
@@ -54,6 +52,12 @@
                 transition: background-color 0.3s, color 0.3s;
             }
         </style>
+
+        <!-- Move favicon links to the end and add multiple formats -->
+        <link rel="icon" href="data:,">  <!-- Clear existing favicon -->
+        <link rel="icon" href="/static/icons/favicon.svg?v=1" type="image/svg+xml">
+        <link rel="alternate icon" href="/static/icons/favicon.svg?v=1" type="image/svg+xml">
+        <link rel="shortcut icon" href="/static/icons/favicon.svg?v=1" type="image/svg+xml">
     </head>
     <body class="theme-transition dark:bg-gray-800 bg-gray-100" hx-headers='{"X-Requested-With": "XMLHttpRequest"}'>
     {{if eq .Page "login"}}

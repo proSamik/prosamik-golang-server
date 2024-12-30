@@ -105,8 +105,8 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := models.MarkdownDocument{
-		Content:    renderedHTML,
-		RawContent: markdownContent,
+		Content: renderedHTML,
+		//RawContent: markdownContent,
 		Metadata: models.DocumentMetadata{
 			Title:       repo,
 			Repository:  repo,
