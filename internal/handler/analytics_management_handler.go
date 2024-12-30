@@ -27,6 +27,17 @@ type AnalyticsManagementData struct {
 func prepareChartData(stats map[string]map[string]int, dates []string, pages []string, colors map[string]string) string {
 	line := charts.NewLine()
 
+	// Format dates for display
+	formattedDates := make([]string, len(dates))
+	for i, date := range dates {
+		t, err := time.Parse("2006-01-02", date)
+		if err == nil {
+			formattedDates[i] = t.Format("02 Jan") // Format as "dd MMM"
+		} else {
+			formattedDates[i] = date
+		}
+	}
+
 	// Basic chart configuration
 	line.SetGlobalOptions(
 		charts.WithInitializationOpts(opts.Initialization{
@@ -51,7 +62,7 @@ func prepareChartData(stats map[string]map[string]int, dates []string, pages []s
 		}),
 	)
 
-	line.SetXAxis(dates)
+	line.SetXAxis(formattedDates)
 
 	// Add data series
 	for _, page := range pages {
