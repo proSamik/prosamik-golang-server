@@ -2,7 +2,15 @@
     <!DOCTYPE html>
     <html lang="en-US">
     <head>
-        <title>Admin Panel</title>
+        <title id="pageTitle">Admin Panel</title>
+        <script>
+            // Set page title to current domain with port if exists
+            function setDomainTitle() {
+                // window.location.host includes both domain and port (e.g., "backend.prosamik.com:3000")
+                document.getElementById('pageTitle').textContent = window.location.host;
+            }
+            document.addEventListener('DOMContentLoaded', setDomainTitle);
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://unpkg.com/htmx.org@1.9.10"></script>
         <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
