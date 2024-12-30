@@ -4,9 +4,9 @@ import "time"
 
 // MarkdownDocument represents the response model for the README content
 type MarkdownDocument struct {
-	Content    string           `json:"content"`    // HTML content converted from Markdown
-	RawContent string           `json:"rawContent"` // Original raw Markdown content
-	Metadata   DocumentMetadata `json:"metadata"`   // Metadata about the document
+	Content string `json:"content"` // HTML content converted from Markdown
+	//RawContent string           `json:"rawContent"` // Original raw Markdown content
+	Metadata DocumentMetadata `json:"metadata"` // Metadata about the document
 }
 
 // DocumentMetadata holds the metadata for the document (e.g., title, repository)
