@@ -2,25 +2,85 @@
     <!DOCTYPE html>
     <html lang="en-US">
     <head>
-        <title>Admin Panel</title>
+        <title id="pageTitle">Admin Panel</title>
+        <script>
+            // Set page title to current domain with port if exists
+            function setDomainTitle() {
+                // window.location.host includes both domain and port (e.g., "backend.prosamik.com:3000")
+                document.getElementById('pageTitle').textContent = window.location.host;
+            }
+            document.addEventListener('DOMContentLoaded', setDomainTitle);
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://unpkg.com/htmx.org@1.9.10"></script>
         <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+        <!-- Tailwind Configuration -->
+        <script>
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {}
+                }
+            }
+        </script>
+        <script>
+            // Initialize theme on page load
+            function initializeTheme() {
+                if (localStorage.getItem('theme') === 'dark' ||
+                    (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            }
+
+            // Toggle theme function
+            function toggleTheme() {
+                const html = document.documentElement;
+                if (html.classList.contains('dark')) {
+                    html.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    html.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+            }
+
+            // Run on page load
+            document.addEventListener('DOMContentLoaded', initializeTheme);
+        </script>
+        <style>
+            .theme-transition {
+                transition: background-color 0.3s, color 0.3s;
+            }
+        </style>
     </head>
-    <body class="bg-gray-100" hx-headers='{"X-Requested-With": "XMLHttpRequest"}'>
+    <body class="theme-transition dark:bg-gray-800 bg-gray-100" hx-headers='{"X-Requested-With": "XMLHttpRequest"}'>
     {{if eq .Page "login"}}
         {{template "login-content" .}}
     {{else}}
-        <nav class="bg-white shadow-lg">
+        <nav class="theme-transition bg-white dark:bg-gray-900 shadow-lg">
             <div class="max-w-6xl mx-auto px-4">
                 <div class="flex justify-between items-center h-16">
                     <div class="flex space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-gray-900">Home</a>
+                        <a href="/" class="theme-transition text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">Home</a>
                     </div>
-                    <div>
+                    <div class="flex items-center space-x-4">
+                        <!-- Theme Toggle Button -->
+                        <button onclick="toggleTheme()"
+                                class="theme-transition p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+                            <!-- Sun icon for dark mode -->
+                            <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <!-- Moon icon for light mode -->
+                            <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                            </svg>
+                        </button>
                         <form action="/logout" method="POST">
                             <button type="submit"
-                                    class="text-red-600 hover:text-red-800">
+                                    class="theme-transition text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300">
                                 Logout
                             </button>
                         </form>
@@ -37,6 +97,8 @@
                 {{template "blog-management" .}}
             {{else if eq .Page "project-management"}}
                 {{template "project-management" .}}
+            {{else if eq .Page "analytics-management"}}
+                {{template "analytics-management" .}}
             {{end}}
         </main>
     {{end}}

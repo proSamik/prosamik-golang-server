@@ -16,4 +16,7 @@ func SetupRoutes() {
 
 	// Register Project Management routes
 	RegisterProjectManagementRoutes()
+
+	// Register Analytics Management routes
+	RegisterAnalyticsManagementRoutes()
 }

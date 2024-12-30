@@ -1,22 +1,26 @@
+
 {{define "dashboard-content"}}
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h1 class="text-2xl font-bold mb-4">Welcome to Admin Dashboard</h1>
-        <p class="text-gray-600 mb-6">You are logged in as an administrator.</p>
+    <div class="theme-transition bg-white dark:bg-gray-900 rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold mb-4 dark:text-white">Welcome to Admin Dashboard</h1>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">You are logged in as an administrator.</p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <a href="/newsletter/management"
-               class="bg-blue-500 hover:bg-blue-600 text-white rounded-lg p-4 text-center">
-                Manage Newsletter Subscriptions
-            </a>
             <a href="/blog/management"
-               class="bg-green-500 hover:bg-green-600 text-white rounded-lg p-4 text-center">
+               class="theme-transition bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white rounded-lg p-4 text-center">
                 Manage Blog Posts
             </a>
             <a href="/project/management"
-               class="bg-green-500 hover:bg-green-600 text-white rounded-lg p-4 text-center">
-                Manage Project Posts
+               class="theme-transition bg-green-500 dark:bg-green-600 hover:bg-green-600 dark:hover:bg-green-700 text-white rounded-lg p-4 text-center">
+                Manage Featured Projects
             </a>
-            <!-- Add other dashboard links here -->
+            <a href="/newsletter/management"
+               class="theme-transition bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg p-4 text-center">
+                Manage Newsletter Subscriptions
+            </a>
+            <a href="/analytics/management"
+               class="theme-transition bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg p-4 text-center">
+                See Website Analytics
+            </a>
         </div>
     </div>
 {{end}}
