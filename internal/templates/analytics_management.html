@@ -57,96 +57,14 @@
     <div class="bg-white p-4 rounded-lg border border-gray-200">
         <h3 class="text-lg font-semibold mb-4">Traffic Overview</h3>
 
-        <!-- Graph Controls -->
-        <div class="flex gap-4 mb-4">
-            {{/* Use either .Data.Pages or .Pages depending on what's available */}}
-            {{$data := . }}
-            {{if .Data}}
-                {{$data = .Data}}
-            {{end}}
-
-            {{range $page := $data.Pages}}
-                <label class="flex items-center gap-2">
-                    <input
-                            type="checkbox"
-                            name="page-{{$page}}"
-                            checked
-                            class="form-checkbox h-4 w-4 text-blue-600"
-                    >
-                    <span class="text-sm capitalize">{{$page}}</span>
-                </label>
-            {{end}}
-        </div>
-
-        <!-- SVG Graph -->
-        <div id="graph-container" class="w-full h-96">
-            {{if not $data.Stats}}
+        <!-- Interactive Chart -->
+        <div id="graph-container" class="w-full min-h-[400px]">
+            {{if not .Data.Stats}}
                 <div class="text-center py-8 text-gray-500">
                     No data to display
                 </div>
             {{else}}
-                <svg viewBox="0 0 1000 400" class="w-full h-full">
-                    <rect width="1000" height="400" fill="#f8fafc" />
-                    <line x1="50" y1="350" x2="50" y2="50" stroke="#94a3b8" stroke-width="1" />
-                    <line x1="50" y1="350" x2="950" y2="350" stroke="#94a3b8" stroke-width="1" />
-
-                    {{range $pageName, $values := $data.LineData}}
-                        <path
-                                d="M {{range $i, $value := $values}}{{if eq $i 0}}{{add 50 (mul $i (div 900 (sub (len $values) 1)))}} {{sub 350 (div (mul $value 300) $data.MaxValue)}}{{else}} L {{add 50 (mul $i (div 900 (sub (len $values) 1)))}} {{sub 350 (div (mul $value 300) $data.MaxValue)}}{{end}}{{end}}"
-                                stroke="{{index $data.Colors $pageName}}"
-                                fill="none"
-                                stroke-width="2"
-                        />
-                    {{end}}
-
-                    {{range $i, $date := $data.Dates}}
-                        <text
-                                x="{{add 50 (mul $i (div 900 (sub (len $data.Dates) 1)))}}"
-                                y="370"
-                                font-size="12"
-                                text-anchor="middle"
-                                fill="#64748b"
-                        >
-                            {{$date}}
-                        </text>
-                    {{end}}
-
-                    {{range $i := seq 0 5}}
-                        <text
-                                x="45"
-                                y="{{sub 350 (mul $i 75)}}"
-                                font-size="12"
-                                text-anchor="end"
-                                fill="#64748b"
-                        >
-                            {{div (mul $data.MaxValue $i) 4}}
-                        </text>
-                    {{end}}
-
-                    <g transform="translate(50, 20)">
-                        {{range $i, $page := $data.Pages}}
-                            <g transform="translate({{mul $i 100}}, 0)">
-                                <line
-                                        x1="0"
-                                        y1="0"
-                                        x2="20"
-                                        y2="0"
-                                        stroke="{{index $data.Colors $page}}"
-                                        stroke-width="2"
-                                />
-                                <text
-                                        x="25"
-                                        y="5"
-                                        font-size="12"
-                                        fill="#64748b"
-                                        class="capitalize"
-                                >
-                                    {{$page}}
-                                </text>
-                            </g>
-                        {{end}}
-                    </g>
-                </svg>
+                {{.Data.ChartHTML | safeHTML}}
             {{end}}
         </div>
     </div>
@@ -188,7 +106,6 @@
                     {{$grandTotal := 0}}
 
                     {{range $date, $pageStats := $data.Stats}}
-                        {{/* Rest of the table template remains the same but using $data instead of .Data */}}
                         {{$total := 0}}
                         {{$total = add (index $pageStats "home") (index $pageStats "about")}}
                         {{$total = add $total (index $pageStats "blogs")}}
@@ -202,8 +119,8 @@
                         {{$grandTotalFeedback = add $grandTotalFeedback (index $pageStats "feedback")}}
                         {{$grandTotal = add $grandTotal $total}}
 
-                        <tr>
-                            <td class="py-2 px-4 border-b">{{$date}}</td>
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-2 px-4 border-b">{{formatDate $date}}</td>
                             <td class="py-2 px-4 border-b text-right">{{index $pageStats "home"}}</td>
                             <td class="py-2 px-4 border-b text-right">{{index $pageStats "about"}}</td>
                             <td class="py-2 px-4 border-b text-right">{{index $pageStats "blogs"}}</td>

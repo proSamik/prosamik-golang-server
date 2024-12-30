@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"prosamik-backend/internal/auth"
+	"time"
 )
 
 var templates = template.Must(template.New("").Funcs(template.FuncMap{
@@ -36,6 +37,18 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{
 			result = append(result, i)
 		}
 		return result
+	},
+	"safeHTML": func(s string) template.HTML {
+		return template.HTML(s)
+	},
+	"formatDate": func(dateStr string) string {
+		// Parse the input date string (assuming format "2006-01-02")
+		t, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			return dateStr
+		}
+		// Format as "02-Jan-06" (which will give us dd-MMM-yy)
+		return t.Format("02-Jan-06")
 	},
 }).ParseGlob("internal/templates/*.html"))
 

@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"bytes"
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/opts"
 	"log"
 	"net/http"
 	"prosamik-backend/internal/repository"
@@ -13,35 +16,88 @@ type AnalyticsManagementData struct {
 	Stats     map[string]map[string]int
 	StartDate string
 	EndDate   string
-	MaxValue  int               // Added from GraphData
-	Dates     []string          // Added from GraphData
-	Pages     []string          // Added from GraphData
-	Colors    map[string]string // Added from GraphData
-	LineData  map[string][]int  // Added from GraphData
+	MaxValue  int
+	Dates     []string
+	Pages     []string
+	Colors    map[string]string
+	LineData  map[string][]int
+	ChartHTML string // New field for the interactive chart
 }
 
-// Since we're not using GraphData struct anymore, rename function to be more specific
-func prepareAnalyticsData(stats map[string]map[string]int) AnalyticsManagementData {
-	// Initialize colors for each page
-	colors := map[string]string{
-		"home":     "#3b82f6", // blue
-		"about":    "#10b981", // green
-		"blogs":    "#f59e0b", // amber
-		"projects": "#ef4444", // red
-		"feedback": "#8b5cf6", // purple
+func prepareChartData(stats map[string]map[string]int, dates []string, pages []string, colors map[string]string) string {
+	line := charts.NewLine()
+
+	// Basic chart configuration
+	line.SetGlobalOptions(
+		charts.WithInitializationOpts(opts.Initialization{
+			Width:  "100%",
+			Height: "400px",
+		}),
+		charts.WithTitleOpts(opts.Title{
+			Title: "Page Views Over Time",
+		}),
+		charts.WithTooltipOpts(opts.Tooltip{
+			Trigger: "axis",
+		}),
+		charts.WithLegendOpts(opts.Legend{
+			Right:  "10%",
+			Orient: "vertical",
+		}),
+		charts.WithDataZoomOpts(opts.DataZoom{
+			Type:       "slider",
+			XAxisIndex: []int{0},
+			Start:      0,
+			End:        100,
+		}),
+	)
+
+	line.SetXAxis(dates)
+
+	// Add data series
+	for _, page := range pages {
+		var values []opts.LineData
+		for _, date := range dates {
+			values = append(values, opts.LineData{
+				Value: stats[date][page],
+			})
+		}
+
+		line.AddSeries(page, values).
+			SetSeriesOptions(
+				charts.WithLineChartOpts(opts.LineChart{}),
+				charts.WithItemStyleOpts(opts.ItemStyle{
+					Color: colors[page],
+				}),
+			)
 	}
 
-	// Get sorted dates
+	// Render to HTML
+	buf := new(bytes.Buffer)
+	err := line.Render(buf)
+	if err != nil {
+		log.Printf("Error rendering chart: %v", err)
+		return ""
+	}
+	return buf.String()
+}
+
+func prepareAnalyticsData(stats map[string]map[string]int) AnalyticsManagementData {
+	colors := map[string]string{
+		"home":     "#3b82f6",
+		"about":    "#10b981",
+		"blogs":    "#f59e0b",
+		"projects": "#ef4444",
+		"feedback": "#8b5cf6",
+	}
+
 	dates := make([]string, 0, len(stats))
 	for date := range stats {
 		dates = append(dates, date)
 	}
 	sort.Strings(dates)
 
-	// Define pages in specific order
 	pages := []string{"home", "about", "blogs", "projects", "feedback"}
 
-	// Prepare line data and find max value
 	lineData := make(map[string][]int)
 	maxValue := 0
 
@@ -57,14 +113,16 @@ func prepareAnalyticsData(stats map[string]map[string]int) AnalyticsManagementDa
 		lineData[page] = values
 	}
 
-	// Return AnalyticsManagementData directly
+	chartHTML := prepareChartData(stats, dates, pages, colors)
+
 	return AnalyticsManagementData{
-		Stats:    stats,
-		MaxValue: maxValue,
-		Dates:    dates,
-		Pages:    pages,
-		Colors:   colors,
-		LineData: lineData,
+		Stats:     stats,
+		MaxValue:  maxValue,
+		Dates:     dates,
+		Pages:     pages,
+		Colors:    colors,
+		LineData:  lineData,
+		ChartHTML: chartHTML,
 	}
 }
 
