@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"prosamik-backend/internal/repository"
 	"prosamik-backend/pkg/models"
@@ -101,7 +102,7 @@ func HandleBlogAdd(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate description length
-	if len(blog.Description) > 5000 {
+	if len(blog.Description) > 2000 {
 		renderFormError(w, "Description cannot exceed 5000 characters")
 		return
 	}
@@ -122,29 +123,8 @@ func HandleBlogAdd(w http.ResponseWriter, r *http.Request) {
 
 	repo := repository.NewBlogRepository()
 
-	// Check for existing title
-	existing, err := repo.GetBlogByTitle(blog.Title)
-	if err != nil {
-		log.Printf("Error checking existing title: %v", err)
-		renderFormError(w, "Internal server error")
-		return
-	}
-
-	if existing != nil {
-		renderFormError(w, "A blog with this title already exists")
-		return
-	}
-
-	// Check for existing path
-	existingPath, err := repo.GetBlogByPath(blog.Path)
-	if err != nil {
-		log.Printf("Error checking existing path: %v", err)
-		renderFormError(w, "Internal server error")
-		return
-	}
-
-	if existingPath != nil {
-		renderFormError(w, "A blog with this path already exists")
+	if err := validateBlogUniqueness(blog, repo); err != nil {
+		renderProjectFormError(w, err.Error())
 		return
 	}
 
@@ -377,12 +357,76 @@ func validateTags(tags string) (string, error) {
 // validatePath checks if the path is a valid URL starting with http
 func validatePath(path string) error {
 	if !strings.HasPrefix(path, "http") {
-		return fmt.Errorf("path must start with http:// or https://")
+		return fmt.Errorf("path must start with https://")
 	}
 
 	_, err := url.Parse(path)
 	if err != nil {
 		return fmt.Errorf("invalid URL format: %v", err)
+	}
+
+	return nil
+}
+
+// validateBlogUniqueness performs concurrent validation checks for project uniqueness and URL validity
+func validateBlogUniqueness(project *models.Blog, repo *repository.BlogRepository) error {
+	pathCheckChan := make(chan error, 1)
+	titleCheckChan := make(chan error, 1)
+	urlCheckChan := make(chan error, 1)
+
+	// Check path existence in DB
+	go func() {
+		existingPath, err := repo.GetBlogByPath(project.Path)
+		if err != nil {
+			pathCheckChan <- fmt.Errorf("database error: %v", err)
+			return
+		}
+		if existingPath != nil {
+			pathCheckChan <- fmt.Errorf("a project with this path already exists")
+			return
+		}
+		pathCheckChan <- nil
+	}()
+
+	// Check title existence in DB
+	go func() {
+		existingTitle, err := repo.GetBlogByTitle(project.Title)
+		if err != nil {
+			titleCheckChan <- fmt.Errorf("database error: %v", err)
+			return
+		}
+		if existingTitle != nil {
+			titleCheckChan <- fmt.Errorf("a project with this title already exists")
+			return
+		}
+		titleCheckChan <- nil
+	}()
+
+	// Check URL validity using markdown handler
+	go func() {
+		w := httptest.NewRecorder()
+		req, err := http.NewRequest("GET", fmt.Sprintf("/md?url=%s", project.Path), nil)
+		if err != nil {
+			urlCheckChan <- fmt.Errorf("failed to create request: %v", err)
+			return
+		}
+		MarkdownHandler(w, req)
+		if w.Code != http.StatusOK {
+			urlCheckChan <- fmt.Errorf("content not found at specified URL")
+			return
+		}
+		urlCheckChan <- nil
+	}()
+
+	// Wait for all checks and return-first error
+	if err := <-pathCheckChan; err != nil {
+		return err
+	}
+	if err := <-titleCheckChan; err != nil {
+		return err
+	}
+	if err := <-urlCheckChan; err != nil {
+		return err
 	}
 
 	return nil
