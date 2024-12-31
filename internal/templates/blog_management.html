@@ -101,7 +101,7 @@
         </div>
     </div>
 
-    <!-- Original Scripts remain unchanged -->
+    <!-- Scripts remain unchanged -->
     <script>
         htmx.on("htmx:afterRequest", function(evt) {
             if (evt.detail.successful && evt.detail.path === "/blog/management/add") {
@@ -249,4 +249,19 @@
             </button>
         </div>
     </div>
+{{end}}
+
+{{define "blog-form-message"}}
+    {{if .Error}}
+        <p class="text-red-500 text-sm">{{.Error}}</p>
+    {{else}}
+        <p class="text-green-500 text-sm">Blog post added successfully!</p>
+        <script>
+            document.getElementById('title').value = '';
+            document.getElementById('path').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('tags').value = '';
+        </script>
+        <div hx-trigger="load" hx-get="/blog/management/search" hx-target="#blog-list"></div>
+    {{end}}
 {{end}}
