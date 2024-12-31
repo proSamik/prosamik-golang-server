@@ -9,64 +9,52 @@ import (
 
 func RegisterAPIRoutes() {
 	// Rate limiter for feedback and newsletter
+	// Reason: Initialize rate limiter once to be used across multiple routes
 	rateLimiter := middleware.NewRateLimiter(60, time.Minute)
 
-	// Blogs route
-	http.HandleFunc("/blogs",
-		middleware.CORSMiddleware(
-			middleware.LoggingMiddleware(
-				handler.HandleBlogsList,
-			),
-		),
-	)
+	// Helper function for standard middleware chain
+	// Reason: Creates a reusable middleware stack for regular routes
+	withStandardMiddlewares := func(h http.HandlerFunc) http.HandlerFunc {
+		return middleware.CORSMiddleware(
+			middleware.LoggingMiddleware(h),
+		)
+	}
 
-	// Projects route
-	http.HandleFunc("/projects",
-		middleware.CORSMiddleware(
+	// Helper function for rate-limited middleware chain
+	// Reason: Creates a separate middleware stack for routes that need rate limiting
+	withRateLimitedMiddlewares := func(h http.HandlerFunc) http.HandlerFunc {
+		return middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
-				handler.HandleProjectsList,
+				rateLimiter.RateLimitMiddleware(h),
 			),
-		),
-	)
+		)
+	}
 
-	// Markdown route
-	http.HandleFunc("/md",
-		middleware.CORSMiddleware(
-			middleware.LoggingMiddleware(
-				handler.MarkdownHandler,
-			),
-		),
-	)
+	// Standard routes without rate limiting
+	// Reason: Group similar routes together for better organization
+	standardRoutes := map[string]http.HandlerFunc{
+		"/blogs":     handler.HandleBlogsList,
+		"/projects":  handler.HandleProjectsList,
+		"/md":        handler.MarkdownHandler,
+		"/analytics": handler.HandleAnalytics,
+	}
 
-	// Feedback route with rate limiting
-	http.HandleFunc("/feedback",
-		middleware.CORSMiddleware(
-			middleware.LoggingMiddleware(
-				rateLimiter.RateLimitMiddleware(
-					handler.HandleFeedback,
-				),
-			),
-		),
-	)
+	// Rate-limited routes
+	// Reason: Separate routes that need rate limiting for clarity
+	rateLimitedRoutes := map[string]http.HandlerFunc{
+		"/feedback":   handler.HandleFeedback,
+		"/newsletter": handler.HandleNewsletterSignup,
+	}
 
-	// Newsletter subscription with rate limiting
-	http.HandleFunc("/newsletter",
-		middleware.CORSMiddleware(
-			middleware.LoggingMiddleware(
-				rateLimiter.RateLimitMiddleware(
-					handler.HandleNewsletterSignup,
-				),
-			),
-		),
-	)
+	// Register standard routes
+	// Reason: Apply standard middleware stack to regular routes
+	for path, apiHandlers := range standardRoutes {
+		http.HandleFunc(path, withStandardMiddlewares(apiHandlers))
+	}
 
-	// Analytics route
-	http.HandleFunc("/analytics",
-		middleware.CORSMiddleware(
-			middleware.LoggingMiddleware(
-				handler.HandleAnalytics,
-			),
-		),
-	)
-
+	// Register rate-limited routes
+	// Reason: Apply rate-limited middleware stack to routes that need it
+	for path, handlers := range rateLimitedRoutes {
+		http.HandleFunc(path, withRateLimitedMiddlewares(handlers))
+	}
 }

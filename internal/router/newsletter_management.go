@@ -7,80 +7,45 @@ import (
 )
 
 func RegisterNewsletterManagementRoutes() {
-	// Newsletter management route
-	http.HandleFunc("/newsletter/management",
-		middleware.CORSMiddleware(
+	// Helper function to apply all middlewares
+	// Reason: Creates a single point to manage all middleware applications,
+	// making it easier to add/remove middleware for all routes at once
+	withMiddlewares := func(h http.HandlerFunc) http.HandlerFunc {
+		return middleware.CORSMiddleware(
 			middleware.LoggingMiddleware(
-				middleware.AuthMiddleware(
-					handler.HandleNewsletterManagement,
-				),
+				middleware.AuthMiddleware(h),
 			),
-		),
-	)
+		)
+	}
 
-	// Newsletter search route
-	http.HandleFunc("/newsletter/search",
-		middleware.CORSMiddleware(
-			middleware.LoggingMiddleware(
-				middleware.AuthMiddleware(
-					handler.HandleNewsletterSearch,
-				),
-			),
-		),
-	)
+	// Newsletter management routes
+	// Reason: Using a map makes it easy to see all routes at a glance
+	// and reduces the repetitive middleware wrapping code
+	routes := map[string]http.HandlerFunc{
+		// Main management route
+		"/newsletter/management": handler.HandleNewsletterManagement,
 
-	// Newsletter add route
-	http.HandleFunc("/newsletter/add",
-		middleware.CORSMiddleware(
-			middleware.LoggingMiddleware(
-				middleware.AuthMiddleware(
-					handler.HandleNewsletterAdd,
-				),
-			),
-		),
-	)
+		// Newsletter search route
+		"/newsletter/search": handler.HandleNewsletterSearch,
 
-	// Newsletter update route
-	http.HandleFunc("/newsletter/update/",
-		middleware.CORSMiddleware(
-			middleware.LoggingMiddleware(
-				middleware.AuthMiddleware(
-					handler.HandleNewsletterUpdate,
-				),
-			),
-		),
-	)
+		// Newsletter add route
+		"/newsletter/add": handler.HandleNewsletterAdd,
 
-	// Newsletter edit route
-	http.HandleFunc("/newsletter/edit/",
-		middleware.CORSMiddleware(
-			middleware.LoggingMiddleware(
-				middleware.AuthMiddleware(
-					handler.HandleNewsletterEdit,
-				),
-			),
-		),
-	)
+		// Newsletter edit routes
+		"/newsletter/edit/":   handler.HandleNewsletterEdit,
+		"/newsletter/update/": handler.HandleNewsletterUpdate,
 
-	// Newsletter cancel edit route
-	http.HandleFunc("/newsletter/cancel-edit/",
-		middleware.CORSMiddleware(
-			middleware.LoggingMiddleware(
-				middleware.AuthMiddleware(
-					handler.HandleNewsletterCancelEdit,
-				),
-			),
-		),
-	)
+		// Newsletter delete route
+		"/newsletter/delete/": handler.HandleNewsletterDelete,
 
-	// Newsletter delete route
-	http.HandleFunc("/newsletter/delete/",
-		middleware.CORSMiddleware(
-			middleware.LoggingMiddleware(
-				middleware.AuthMiddleware(
-					handler.HandleNewsletterDelete,
-				),
-			),
-		),
-	)
+		// Cancel-edit
+		"/newsletter/cancel-edit/": handler.HandleNewsletterCancelEdit,
+	}
+
+	// Register all routes with middlewares
+	// Reason: Single loop to register all routes reduces code duplication
+	// and makes it less prone to errors
+	for path, handlers := range routes {
+		http.HandleFunc(path, withMiddlewares(handlers))
+	}
 }
