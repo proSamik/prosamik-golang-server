@@ -187,7 +187,7 @@ func HandleProjectEdit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Render edit form template
-	err = templates.ExecuteTemplate(w, "edit-form", project)
+	err = templates.ExecuteTemplate(w, "project-edit-form", project)
 	if err != nil {
 		log.Printf("Template error: %v", err)
 		http.Error(w, "Failed to render template", http.StatusInternalServerError)
