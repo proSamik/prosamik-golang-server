@@ -7,6 +7,7 @@ import (
 	"prosamik-backend/internal/fetcher"
 	"prosamik-backend/internal/parser"
 	"prosamik-backend/pkg/models"
+	"regexp"
 	"strings"
 )
 
@@ -28,45 +29,84 @@ type GitHubCommit struct {
 	} `json:"commit"`
 }
 
-func constructGitHubAPIURL(githubURL string) (string, string, string, string, error) {
-	// Previous URL parsing logic remains the same...
-	// But now we also return the file path for getting the last updated time
-
+// constructGitHubAPIURL parses a GitHub URL and returns API URL and repository details
+func constructGitHubAPIURL(githubURL string) (string, string, string, string, string, error) {
 	repoPrefix := "https://github.com/"
 	if !strings.HasPrefix(githubURL, repoPrefix) {
-		return "", "", "", "", fmt.Errorf("URL must start with %s", repoPrefix)
+		return "", "", "", "", "", fmt.Errorf("URL must start with %s", repoPrefix)
 	}
 
 	repoPath := strings.TrimPrefix(githubURL, repoPrefix)
 	parts := strings.Split(repoPath, "/")
 
 	if len(parts) < 2 {
-		return "", "", "", "", fmt.Errorf("invalid GitHub URL format: %s", githubURL)
+		return "", "", "", "", "", fmt.Errorf("invalid GitHub URL format: %s", githubURL)
 	}
 
 	owner := parts[0]
 	repo := parts[1]
 	var filePath string
+	branchName := "main" // default branch
 
 	if strings.Contains(githubURL, "/blob/") {
+		branchName = parts[3]
 		filePath = strings.Join(parts[4:], "/")
-		branchName := parts[3]
 		apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s?ref=%s",
 			owner, repo, filePath, branchName)
-		return apiURL, owner, repo, filePath, nil
+		return apiURL, owner, repo, filePath, branchName, nil
 	} else if strings.Contains(githubURL, "/tree/") {
-		branchName := parts[3]
+		branchName = parts[3]
 		filePath = strings.Join(parts[4:], "/") + "/README.md"
 		apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s?ref=%s",
 			owner, repo, filePath, branchName)
-		return apiURL, owner, repo, filePath, nil
+		return apiURL, owner, repo, filePath, branchName, nil
 	} else {
 		filePath = "README.md"
-		apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/README.md", owner, repo)
-		return apiURL, owner, repo, filePath, nil
+		apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/README.md",
+			owner, repo)
+		return apiURL, owner, repo, filePath, branchName, nil
 	}
 }
 
+// processImageURLs converts relative image URLs to raw.githubusercontent.com URLs
+func processImageURLs(content, owner, repo, branch string) string {
+	// Handle Markdown image syntax ![alt](./path)
+	mdPattern := regexp.MustCompile(`![(.*?)]\((./[^)]+)\)`)
+	content = mdPattern.ReplaceAllStringFunc(content, func(match string) string {
+		parts := mdPattern.FindStringSubmatch(match)
+		if len(parts) < 3 {
+			return match
+		}
+
+		altText := parts[1]
+		relPath := strings.TrimPrefix(parts[2], "./")
+
+		rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s",
+			owner, repo, branch, relPath)
+
+		return fmt.Sprintf("![%s](%s)", altText, rawURL)
+	})
+
+	// Handle HTML image syntax <img src="./path" />
+	htmlPattern := regexp.MustCompile(`<img[^>]+src=["'](\./[^"']+)["']`)
+	content = htmlPattern.ReplaceAllStringFunc(content, func(match string) string {
+		parts := htmlPattern.FindStringSubmatch(match)
+		if len(parts) < 2 {
+			return match
+		}
+
+		relPath := strings.TrimPrefix(parts[1], "./")
+
+		rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s",
+			owner, repo, branch, relPath)
+
+		return strings.Replace(match, parts[1], rawURL, 1)
+	})
+
+	return content
+}
+
+// MarkdownHandler processes GitHub markdown content and returns rendered HTML
 func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Query().Get("url")
 	if url == "" {
@@ -74,8 +114,8 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Now getting filePath as well from the URL constructor
-	apiURL, owner, repo, filePath, err := constructGitHubAPIURL(url)
+	// Now getting branch name as well from the URL constructor
+	apiURL, owner, repo, filePath, branch, err := constructGitHubAPIURL(url)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error constructing GitHub API URL: %v", err),
 			http.StatusBadRequest)
@@ -89,6 +129,9 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Process image URLs before converting to HTML
+	processedContent := processImageURLs(markdownContent, owner, repo, branch)
+
 	// Construct commits API URL and fetch last updated time
 	commitsURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/commits?path=%s&page=1&per_page=1",
 		owner, repo, filePath)
@@ -98,7 +141,7 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	renderedHTML, err := parser.ConvertMarkdownToHTML(markdownContent)
+	renderedHTML, err := parser.ConvertMarkdownToHTML(processedContent)
 	if err != nil {
 		http.Error(w, "Failed to convert Markdown to HTML", http.StatusInternalServerError)
 		return
@@ -106,11 +149,10 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 
 	response := models.MarkdownDocument{
 		Content: renderedHTML,
-		//RawContent: markdownContent,
 		Metadata: models.DocumentMetadata{
 			Title:       repo,
 			Repository:  repo,
-			LastUpdated: lastUpdated, // Now using the actual last updated time
+			LastUpdated: lastUpdated,
 			Author:      owner,
 			Description: "This is the README for the repository.",
 		},
