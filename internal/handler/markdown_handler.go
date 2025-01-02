@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"prosamik-backend/internal/fetcher"
 	"prosamik-backend/internal/parser"
 	"prosamik-backend/pkg/models"
@@ -71,7 +72,7 @@ func constructGitHubAPIURL(githubURL string) (string, string, string, string, st
 // processImageURLs converts relative image URLs to raw.githubusercontent.com URLs
 func processImageURLs(content, owner, repo, branch string) string {
 	// Handle Markdown image syntax ![alt](./path)
-	mdPattern := regexp.MustCompile(`![(.*?)]\((./[^)]+)\)`)
+	mdPattern := regexp.MustCompile(`!\[(.*?)\]\((\./[^)]+)\)`)
 	content = mdPattern.ReplaceAllStringFunc(content, func(match string) string {
 		parts := mdPattern.FindStringSubmatch(match)
 		if len(parts) < 3 {
@@ -80,6 +81,16 @@ func processImageURLs(content, owner, repo, branch string) string {
 
 		altText := parts[1]
 		relPath := strings.TrimPrefix(parts[2], "./")
+
+		// If alt text is empty, use the last part of the path
+		if altText == "" {
+			pathParts := strings.Split(relPath, "/")
+			if len(pathParts) > 0 {
+				// Remove file extension for alt text
+				fileName := pathParts[len(pathParts)-1]
+				altText = strings.TrimSuffix(fileName, filepath.Ext(fileName))
+			}
+		}
 
 		rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s",
 			owner, repo, branch, relPath)
@@ -149,6 +160,7 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 
 	response := models.MarkdownDocument{
 		Content: renderedHTML,
+		//RawContent: markdownContent,
 		Metadata: models.DocumentMetadata{
 			Title:       repo,
 			Repository:  repo,
