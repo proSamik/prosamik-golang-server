@@ -8,7 +8,7 @@ projects and see website analytics for the prosamik nextjs app.
 
 The instructions on how to write the Markdown content that it can understand are [here](https://github.com/proSamik/README-template)
 
-To understand the project in-depth [click here]()
+To understand the project in-depth [click here](https://prosamik.com/projects/prosamik-golang-server)
 
 ---
 
