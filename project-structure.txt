@@ -11,22 +11,30 @@
 |   |-- auth
 |   |   |-- github_auth.go
 |   |   `-- jwt_auth.go
-|   |-- data
-|   |   |-- blogs_list.go
-|   |   `-- projects_list.go
 |   |-- database
 |   |   |-- migrations
 |   |   |   |-- 001_create_newsletter_subscriptions.down.sql
-|   |   |   `-- 001_create_newsletter_subscriptions.up.sql
+|   |   |   |-- 001_create_newsletter_subscriptions.up.sql
+|   |   |   |-- 002_create_blogs.down.sql
+|   |   |   |-- 002_create_blogs.up.sql
+|   |   |   |-- 003_create_projects.down.sql
+|   |   |   |-- 003_create_projects.up.sql
+|   |   |   |-- 004_create_analytics.down.sql
+|   |   |   `-- 004_create_analytics.up.sql
 |   |   `-- postgres.go
 |   |-- fetcher
 |   |   `-- markdown_fetcher.go
 |   |-- handler
 |   |   |-- admin_handler.go
+|   |   |-- analytics_handler.go
+|   |   |-- analytics_management_handler.go
+|   |   |-- blog_management_handler.go
 |   |   |-- blogs_handler.go
 |   |   |-- feedback_handler.go
 |   |   |-- markdown_handler.go
 |   |   |-- newsletter_handler.go
+|   |   |-- newsletter_management_handler.go
+|   |   |-- project_management_handler.go
 |   |   `-- projects_handler.go
 |   |-- middleware
 |   |   |-- auth_middleware.go
@@ -35,18 +43,37 @@
 |   |-- parser
 |   |   `-- markdown_to_html.go
 |   |-- repository
-|   |   `-- newsletter_repository.go
+|   |   |-- analytics_repository.go
+|   |   |-- blog_repository.go
+|   |   |-- newsletter_repository.go
+|   |   `-- project_repository.go
 |   |-- router
+|   |   |-- admin.go
+|   |   |-- analytics_management.go
+|   |   |-- api_routes.go
+|   |   |-- blog_routes.go
+|   |   |-- newsletter_management.go
+|   |   |-- project_routes.go
 |   |   `-- router.go
 |   `-- templates
+|       |-- analytics_management.html
 |       |-- base.html
+|       |-- blog_management.html
 |       |-- dashboard.html
 |       |-- login.html
-|       `-- newsletter_management.html
+|       |-- newsletter_management.html
+|       `-- project_management.html
 |-- pkg
 |   `-- models
+|       |-- analytics.go
+|       |-- blog.go
 |       |-- models.go
-|       `-- newsletter.go
-`-- project-structure.txt
+|       |-- newsletter.go
+|       `-- project.go
+|-- project-structure.txt
+|-- project-strucure.txt
+`-- static
+    `-- icons
+        `-- favicon.svg
 
-17 directories, 33 files
+18 directories, 59 files
