@@ -123,6 +123,15 @@ func processImageURLs(content, owner, repo, branch, markdownPath string) string 
 	return content
 }
 
+// getFileName gets filename of the Markdown file
+func getFileName(filePath string) string {
+	parts := strings.Split(filePath, "/")
+	if len(parts) > 0 {
+		return parts[len(parts)-1]
+	}
+	return ""
+}
+
 // MarkdownHandler processes GitHub markdown content and returns rendered HTML
 func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Query().Get("url")
@@ -164,15 +173,36 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get the title based on URL type
+	title := repo // default title
+	if strings.Contains(url, "/blob/") || strings.Contains(url, "/tree/") {
+		title = getFileName(filePath)
+	}
+
+	// Get description from content if available
+	description := "This is the README for the repository." // default description
+	if len(markdownContent) > 0 {
+		// Take the first 200 characters, trim to last complete word
+		if len(markdownContent) > 100 {
+			description = markdownContent[:100]
+			lastSpace := strings.LastIndex(description, " ")
+			if lastSpace > 0 {
+				description = description[:lastSpace] + "..."
+			}
+		} else {
+			description = markdownContent
+		}
+	}
+
 	response := models.MarkdownDocument{
 		Content: renderedHTML,
 		//RawContent: markdownContent,
 		Metadata: models.DocumentMetadata{
-			Title:       repo,
+			Title:       title,
 			Repository:  repo,
 			LastUpdated: lastUpdated,
 			Author:      owner,
-			Description: "This is the README for the repository.",
+			Description: description,
 		},
 	}
 
