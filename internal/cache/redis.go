@@ -24,6 +24,7 @@ type CachedContent struct {
 }
 
 // InitRedis initializes the Redis connection
+// In your InitRedis function:
 func InitRedis() error {
 	redisConfig := getRedisConfig()
 
@@ -33,11 +34,27 @@ func InitRedis() error {
 		DB:       0,
 	})
 
+	// Test connection first
 	if err := testConnection(); err != nil {
 		return fmt.Errorf("redis connection failed: %w", err)
 	}
 
-	fmt.Printf("Successfully connected to Redis at %s:%s\n", redisConfig.host, redisConfig.port)
+	// After successful connection, set memory configs
+	ctx := context.Background()
+
+	// Add Memory Policy: Set memory policy to LRU
+	if err := RedisClient.ConfigSet(ctx, "maxmemory-policy", "allkeys-lru").Err(); err != nil {
+		return fmt.Errorf("setting maxmemory-policy: %w", err)
+	}
+
+	// Verify the setting was applied
+	policy, err := RedisClient.ConfigGet(ctx, "maxmemory-policy").Result()
+	if err != nil {
+		return fmt.Errorf("getting maxmemory-policy: %w", err)
+	}
+	fmt.Printf("Memory Policy set to: %v\n", policy[1])
+
+	fmt.Printf("Successfully connected to Redis at %s:%s", redisConfig.host, redisConfig.port)
 
 	// Start cleanup routine in background
 	go startExpiryCleanup()

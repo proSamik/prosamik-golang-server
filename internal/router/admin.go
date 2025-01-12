@@ -11,6 +11,8 @@ func RegisterAdminRoutes() {
 	// Static file server
 	fs := http.FileServer(http.Dir("static")) // Assuming your static folder is at project root
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	// Add specific handler for favicon
+	http.Handle("/favicon.ico", http.StripPrefix("/", fs))
 
 	// Login route
 	http.HandleFunc("/login",
