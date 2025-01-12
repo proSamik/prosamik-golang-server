@@ -42,7 +42,7 @@ func InitRedis() error {
 	// After successful connection, set memory configs
 	ctx := context.Background()
 
-	// Set memory policy to LRU
+	// Add Memory Policy: Set memory policy to LRU
 	if err := RedisClient.ConfigSet(ctx, "maxmemory-policy", "allkeys-lru").Err(); err != nil {
 		return fmt.Errorf("setting maxmemory-policy: %w", err)
 	}
@@ -54,7 +54,7 @@ func InitRedis() error {
 	}
 	fmt.Printf("Memory Policy set to: %v\n", policy[1])
 
-	fmt.Printf("Successfully connected to Redis at %s:%s with LRU policy\n", redisConfig.host, redisConfig.port)
+	fmt.Printf("Successfully connected to Redis at %s:%s", redisConfig.host, redisConfig.port)
 
 	// Start cleanup routine in background
 	go startExpiryCleanup()
