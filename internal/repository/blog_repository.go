@@ -1,17 +1,25 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"prosamik-backend/internal/cache"
 	"prosamik-backend/internal/database"
 	"prosamik-backend/pkg/models"
 	"strings"
+	"time"
 )
 
 type BlogRepository struct {
 	db *sql.DB
 }
+
+const (
+	AllBlogsCacheKey = "all_blogs_cache"
+)
 
 func NewBlogRepository() *BlogRepository {
 	return &BlogRepository{
@@ -69,8 +77,20 @@ func (r *BlogRepository) GetBlogByTitle(title string) (*models.Blog, error) {
 	return blog, nil
 }
 
-// GetAllBlogs retrieves all blog posts
+// GetAllBlogs retrieves all blog posts with caching
 func (r *BlogRepository) GetAllBlogs() ([]*models.Blog, error) {
+	// Try to get from cache first
+	cached, err := cache.GetCachedContent(context.Background(), AllBlogsCacheKey)
+	if err == nil {
+		// Cache hit
+		var blogs []*models.Blog
+		if err := json.Unmarshal([]byte(cached.Content), &blogs); err != nil {
+			return nil, fmt.Errorf("unmarshaling cached blogs: %w", err)
+		}
+		return blogs, nil
+	}
+
+	// Cache miss or error - fetch from the database
 	query := `
         SELECT id, title, path, description, tags, views_count
         FROM blogs
@@ -81,7 +101,6 @@ func (r *BlogRepository) GetAllBlogs() ([]*models.Blog, error) {
 	if err != nil {
 		return nil, fmt.Errorf("prepare statement error: %w", err)
 	}
-
 	defer func() {
 		if cerr := closeStmt(stmt); cerr != nil {
 			// If there's no error from the function, use the close error
@@ -95,15 +114,12 @@ func (r *BlogRepository) GetAllBlogs() ([]*models.Blog, error) {
 	if err != nil {
 		return nil, fmt.Errorf("query error: %w", err)
 	}
-
-	defer func() {
-		if cerr := closeStmt(stmt); cerr != nil {
-			// If there's no error from the function, use the close error
-			if closeErr == nil {
-				closeErr = cerr
-			}
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			err = fmt.Errorf("rows close error: %v: %w", err, err)
 		}
-	}()
+	}(rows)
 
 	var blogs []*models.Blog
 	for rows.Next() {
@@ -122,7 +138,30 @@ func (r *BlogRepository) GetAllBlogs() ([]*models.Blog, error) {
 		blogs = append(blogs, blog)
 	}
 
+	// Cache the results
+	if err := r.cacheBlogsList(blogs); err != nil {
+		fmt.Printf("Warning: failed to cache blogs: %v\n", err)
+	}
+
 	return blogs, nil
+}
+
+// Helper function to cache blog list
+func (r *BlogRepository) cacheBlogsList(blogs []*models.Blog) error {
+	blogsJSON, err := json.Marshal(blogs)
+	if err != nil {
+		return fmt.Errorf("marshaling blogs: %w", err)
+	}
+
+	return cache.SetCachedContent(context.Background(), AllBlogsCacheKey, &cache.CachedContent{
+		Content:     string(blogsJSON),
+		LastUpdated: time.Now(),
+	})
+}
+
+// Helper function to invalidate cache
+func (r *BlogRepository) invalidateCache() error {
+	return cache.RedisClient.Del(context.Background(), AllBlogsCacheKey).Err()
 }
 
 // CreateBlog adds a new blog post
@@ -156,6 +195,11 @@ func (r *BlogRepository) CreateBlog(blog *models.Blog) error {
 
 	if err != nil {
 		return fmt.Errorf("create blog error: %w", err)
+	}
+
+	// Invalidate cache after successful creation
+	if err := r.invalidateCache(); err != nil {
+		fmt.Printf("Warning: failed to invalidate cache after creation: %v\n", err)
 	}
 
 	return nil
@@ -203,6 +247,11 @@ func (r *BlogRepository) UpdateBlog(blog *models.Blog) error {
 		return fmt.Errorf("no blog found with id: %d", blog.ID)
 	}
 
+	// Invalidate cache after successful creation
+	if err := r.invalidateCache(); err != nil {
+		fmt.Printf("Warning: failed to invalidate cache after creation: %v\n", err)
+	}
+
 	return nil
 }
 
@@ -239,6 +288,11 @@ func (r *BlogRepository) DeleteBlog(id int64) error {
 
 	if rowsAffected == 0 {
 		return fmt.Errorf("no blog found with id: %d", id)
+	}
+
+	// Invalidate cache after successful deletion
+	if err := r.invalidateCache(); err != nil {
+		fmt.Printf("Warning: failed to invalidate cache after deletion: %v\n", err)
 	}
 
 	return nil

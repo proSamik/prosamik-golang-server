@@ -1,79 +1,86 @@
 .
-|-- Dockerfile
-|-- LICENSE
-|-- README.md
-|-- cmd
-|   `-- server
-|       `-- main.go
-|-- go.mod
-|-- go.sum
-|-- internal
-|   |-- auth
-|   |   |-- github_auth.go
-|   |   `-- jwt_auth.go
-|   |-- database
-|   |   |-- migrations
-|   |   |   |-- 001_create_newsletter_subscriptions.down.sql
-|   |   |   |-- 001_create_newsletter_subscriptions.up.sql
-|   |   |   |-- 002_create_blogs.down.sql
-|   |   |   |-- 002_create_blogs.up.sql
-|   |   |   |-- 003_create_projects.down.sql
-|   |   |   |-- 003_create_projects.up.sql
-|   |   |   |-- 004_create_analytics.down.sql
-|   |   |   `-- 004_create_analytics.up.sql
-|   |   `-- postgres.go
-|   |-- fetcher
-|   |   `-- markdown_fetcher.go
-|   |-- handler
-|   |   |-- admin_handler.go
-|   |   |-- analytics_handler.go
-|   |   |-- analytics_management_handler.go
-|   |   |-- blog_management_handler.go
-|   |   |-- blogs_handler.go
-|   |   |-- feedback_handler.go
-|   |   |-- markdown_handler.go
-|   |   |-- newsletter_handler.go
-|   |   |-- newsletter_management_handler.go
-|   |   |-- project_management_handler.go
-|   |   `-- projects_handler.go
-|   |-- middleware
-|   |   |-- auth_middleware.go
-|   |   |-- middleware.go
-|   |   `-- rate_limiter.go
-|   |-- parser
-|   |   `-- markdown_to_html.go
-|   |-- repository
-|   |   |-- analytics_repository.go
-|   |   |-- blog_repository.go
-|   |   |-- newsletter_repository.go
-|   |   `-- project_repository.go
-|   |-- router
-|   |   |-- admin.go
-|   |   |-- analytics_management.go
-|   |   |-- api_routes.go
-|   |   |-- blog_routes.go
-|   |   |-- newsletter_management.go
-|   |   |-- project_routes.go
-|   |   `-- router.go
-|   `-- templates
-|       |-- analytics_management.html
-|       |-- base.html
-|       |-- blog_management.html
-|       |-- dashboard.html
-|       |-- login.html
-|       |-- newsletter_management.html
-|       `-- project_management.html
-|-- pkg
-|   `-- models
-|       |-- analytics.go
-|       |-- blog.go
-|       |-- models.go
-|       |-- newsletter.go
-|       `-- project.go
-|-- project-structure.txt
-|-- project-strucure.txt
-`-- static
-    `-- icons
-        `-- favicon.svg
+├── Dockerfile
+├── LICENSE
+├── PROJECT.md
+├── README.md
+├── cmd
+│   └── server
+│       └── main.go
+├── go.mod
+├── go.sum
+├── images
+│   ├── dashboard.png
+│   ├── post-management.png
+│   └── website-analytics.png
+├── internal
+│   ├── auth
+│   │   ├── github_auth.go
+│   │   └── jwt_auth.go
+│   ├── cache
+│   │   └── redis.go
+│   ├── database
+│   │   ├── migrations
+│   │   │   ├── 001_create_newsletter_subscriptions.down.sql
+│   │   │   ├── 001_create_newsletter_subscriptions.up.sql
+│   │   │   ├── 002_create_blogs.down.sql
+│   │   │   ├── 002_create_blogs.up.sql
+│   │   │   ├── 003_create_projects.down.sql
+│   │   │   ├── 003_create_projects.up.sql
+│   │   │   ├── 004_create_analytics.down.sql
+│   │   │   └── 004_create_analytics.up.sql
+│   │   └── postgres.go
+│   ├── fetcher
+│   │   └── markdown_fetcher.go
+│   ├── handler
+│   │   ├── admin_handler.go
+│   │   ├── analytics_handler.go
+│   │   ├── analytics_management_handler.go
+│   │   ├── blog_management_handler.go
+│   │   ├── blogs_handler.go
+│   │   ├── feedback_handler.go
+│   │   ├── markdown_handler.go
+│   │   ├── newsletter_handler.go
+│   │   ├── newsletter_management_handler.go
+│   │   ├── project_management_handler.go
+│   │   └── projects_handler.go
+│   ├── middleware
+│   │   ├── auth_middleware.go
+│   │   ├── middleware.go
+│   │   └── rate_limiter.go
+│   ├── parser
+│   │   └── markdown_to_html.go
+│   ├── repository
+│   │   ├── analytics_repository.go
+│   │   ├── blog_repository.go
+│   │   ├── newsletter_repository.go
+│   │   └── project_repository.go
+│   ├── router
+│   │   ├── admin.go
+│   │   ├── analytics_management.go
+│   │   ├── api_routes.go
+│   │   ├── blog_routes.go
+│   │   ├── newsletter_management.go
+│   │   ├── project_routes.go
+│   │   └── router.go
+│   └── templates
+│       ├── analytics_management.html
+│       ├── base.html
+│       ├── blog_management.html
+│       ├── cache_stats_section.html
+│       ├── dashboard.html
+│       ├── login.html
+│       ├── newsletter_management.html
+│       └── project_management.html
+├── pkg
+│   └── models
+│       ├── analytics.go
+│       ├── blog.go
+│       ├── models.go
+│       ├── newsletter.go
+│       └── project.go
+├── project-structure.txt
+└── static
+    └── icons
+        └── favicon.svg
 
-18 directories, 59 files
+20 directories, 64 files

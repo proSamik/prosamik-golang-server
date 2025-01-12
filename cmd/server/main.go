@@ -1,22 +1,23 @@
 package main
 
 import (
+	"fmt"
 	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
+	"prosamik-backend/internal/cache"
 	"prosamik-backend/internal/database"
 	"prosamik-backend/internal/router"
 )
 
 func main() {
-
 	// Check and load environment variables in development mode
 	if os.Getenv("ENV") != "production" {
 		if err := godotenv.Load(); err != nil {
-			log.Println("Warning: Error loading .env file")
+			fmt.Println("Warning: Error loading .env file")
 		} else {
-			log.Println(".env file loaded successfully")
+			fmt.Println(".env file loaded successfully")
 		}
 	}
 
@@ -28,9 +29,14 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Initialize Redis connection
+	if err := cache.InitRedis(); err != nil {
+		log.Fatal(err)
+	}
+
 	// Start server
 	port := ":10000"
-	log.Printf("Server starting on port %s", port)
+	fmt.Printf("Server starting on port %s\n", port)
 	if err := http.ListenAndServe(port, nil); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}

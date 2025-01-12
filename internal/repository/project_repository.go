@@ -1,17 +1,25 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"prosamik-backend/internal/cache"
 	"prosamik-backend/internal/database"
 	"prosamik-backend/pkg/models"
 	"strings"
+	"time"
 )
 
 type ProjectRepository struct {
 	db *sql.DB
 }
+
+const (
+	AllProjectsCacheKey = "all_projects_cache"
+)
 
 func NewProjectRepository() *ProjectRepository {
 	return &ProjectRepository{
@@ -71,6 +79,19 @@ func (r *ProjectRepository) GetProjectByTitle(title string) (*models.Project, er
 
 // GetAllProjects retrieves all project posts
 func (r *ProjectRepository) GetAllProjects() ([]*models.Project, error) {
+	// Try to get from cache first
+	cached, err := cache.GetCachedContent(context.Background(), AllBlogsCacheKey)
+	if err == nil {
+		// Cache hit
+		var projects []*models.Project
+		if err := json.Unmarshal([]byte(cached.Content), &projects); err != nil {
+			return nil, fmt.Errorf("unmarshaling cached blogs: %w", err)
+		}
+		return projects, nil
+	}
+
+	// Cache miss or error - fetch from the database
+
 	query := `
         SELECT id, title, path, description, tags, views_count
         FROM projects
@@ -122,7 +143,30 @@ func (r *ProjectRepository) GetAllProjects() ([]*models.Project, error) {
 		projects = append(projects, project)
 	}
 
+	// Cache the results
+	if err := r.cacheProjectsList(projects); err != nil {
+		fmt.Printf("Warning: failed to cache blogs: %v\n", err)
+	}
+
 	return projects, nil
+}
+
+// Helper function to cache blog list
+func (r *ProjectRepository) cacheProjectsList(projects []*models.Project) error {
+	projectsJSON, err := json.Marshal(projects)
+	if err != nil {
+		return fmt.Errorf("marshaling blogs: %w", err)
+	}
+
+	return cache.SetCachedContent(context.Background(), AllProjectsCacheKey, &cache.CachedContent{
+		Content:     string(projectsJSON),
+		LastUpdated: time.Now(),
+	})
+}
+
+// Helper function to invalidate cache
+func (r *ProjectRepository) invalidateProjectCache() error {
+	return cache.RedisClient.Del(context.Background(), AllProjectsCacheKey).Err()
 }
 
 // CreateProject adds a new project post
@@ -156,6 +200,11 @@ func (r *ProjectRepository) CreateProject(project *models.Project) error {
 
 	if err != nil {
 		return fmt.Errorf("create project error: %w", err)
+	}
+
+	// Invalidate cache after successful creation
+	if err := r.invalidateProjectCache(); err != nil {
+		fmt.Printf("Warning: failed to invalidate cache after creation: %v\n", err)
 	}
 
 	return nil
@@ -203,6 +252,11 @@ func (r *ProjectRepository) UpdateProject(project *models.Project) error {
 		return fmt.Errorf("no project found with id: %d", project.ID)
 	}
 
+	// Invalidate cache after successful creation
+	if err := r.invalidateProjectCache(); err != nil {
+		fmt.Printf("Warning: failed to invalidate cache after creation: %v\n", err)
+	}
+
 	return nil
 }
 
@@ -239,6 +293,11 @@ func (r *ProjectRepository) DeleteProject(id int64) error {
 
 	if rowsAffected == 0 {
 		return fmt.Errorf("no project found with id: %d", id)
+	}
+
+	// Invalidate cache after successful creation
+	if err := r.invalidateProjectCache(); err != nil {
+		fmt.Printf("Warning: failed to invalidate cache after creation: %v\n", err)
 	}
 
 	return nil
@@ -391,7 +450,7 @@ func (r *ProjectRepository) GetProjectByPath(path string) (*models.Project, erro
 	return project, nil
 }
 
-// IncrementViewCount increments the views_count for a project
+// IncrementProjectViewCount IncrementViewCount increments the views_count for a project
 func (r *ProjectRepository) IncrementProjectViewCount(id int64) error {
 	query := `
         UPDATE projects 

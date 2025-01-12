@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"prosamik-backend/internal/auth"
+	"prosamik-backend/internal/cache"
 	"strings"
 	"time"
 )
@@ -19,7 +20,7 @@ type GitHubFile struct {
 	Content string `json:"content"`
 }
 
-// GitHubCommit represents a single commit in the commits API response
+// GitHubCommit represents a single commit in the commit API response
 type GitHubCommit struct {
 	Commit struct {
 		Committer struct {
@@ -28,8 +29,54 @@ type GitHubCommit struct {
 	} `json:"commit"`
 }
 
-// FetchContentFromGitHubURL fetches file content from GitHub API
+// FetchContentFromGitHubURL fetches file content from GitHub API with caching
 func FetchContentFromGitHubURL(ctx context.Context, apiURL string) (string, error) {
+	// Try to get from cache first
+	cached, err := cache.GetCachedContent(ctx, apiURL)
+	if err != nil {
+		fmt.Printf("Cache error: %v, falling back to GitHub API\n", err)
+	} else if cached != nil {
+		// If found in the cache, verify if content is still fresh by checking the last commit
+		commitsURL := getCommitsURL(apiURL)
+		lastUpdated, err := FetchLastCommitData(ctx, commitsURL)
+		if err != nil {
+			fmt.Printf("Error checking last commit, using cached content: %v\n", err)
+			return cached.Content, nil
+		}
+
+		// If content hasn't changed, return a cached version
+		if !lastUpdated.After(cached.LastUpdated) {
+			return cached.Content, nil
+		}
+		fmt.Printf("Cache outdated, fetching fresh content\n")
+	}
+
+	// Fetch fresh content from GitHub
+	content, err := fetchFreshContent(ctx, apiURL)
+	if err != nil {
+		return "", err
+	}
+
+	// Get last commit time for caching
+	lastUpdated, err := FetchLastCommitData(ctx, getCommitsURL(apiURL))
+	if err != nil {
+		fmt.Printf("Warning: couldn't get last commit time: %v\n", err)
+		return content, nil
+	}
+
+	// Cache the new content
+	if err := cache.SetCachedContent(ctx, apiURL, &cache.CachedContent{
+		Content:     content,
+		LastUpdated: lastUpdated,
+	}); err != nil {
+		fmt.Printf("Warning: failed to cache content: %v\n", err)
+	}
+
+	return content, nil
+}
+
+// fetchFreshContent contains the original content fetching logic
+func fetchFreshContent(ctx context.Context, apiURL string) (string, error) {
 	body, err := makeGitHubRequest(ctx, apiURL)
 	if err != nil {
 		return "", err
@@ -48,6 +95,14 @@ func FetchContentFromGitHubURL(ctx context.Context, apiURL string) (string, erro
 	return decodedContent, nil
 }
 
+func getCommitsURL(contentURL string) string {
+	parts := strings.Split(contentURL, "/contents/")
+	if len(parts) != 2 {
+		return contentURL
+	}
+	return parts[0] + "/commits?path=" + parts[1]
+}
+
 // FetchLastCommitData fetches the last commit information for a file or repository
 func FetchLastCommitData(ctx context.Context, apiURL string) (time.Time, error) {
 	body, err := makeGitHubRequest(ctx, apiURL)
@@ -57,7 +112,6 @@ func FetchLastCommitData(ctx context.Context, apiURL string) (time.Time, error) 
 
 	var commits []GitHubCommit
 	if err := json.Unmarshal(body, &commits); err != nil {
-		// Log the raw response for debugging
 		fmt.Printf("Raw GitHub commits response: %s\n", string(body))
 		return time.Time{}, fmt.Errorf("error unmarshalling GitHub commits response: %v", err)
 	}
