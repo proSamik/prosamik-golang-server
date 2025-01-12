@@ -47,13 +47,6 @@ func InitRedis() error {
 		return fmt.Errorf("setting maxmemory-policy: %w", err)
 	}
 
-	// Verify the setting was applied
-	policy, err := RedisClient.ConfigGet(ctx, "maxmemory-policy").Result()
-	if err != nil {
-		return fmt.Errorf("getting maxmemory-policy: %w", err)
-	}
-	fmt.Printf("Memory Policy set to: %v\n", policy[1])
-
 	fmt.Printf("Successfully connected to Redis at %s:%s", redisConfig.host, redisConfig.port)
 
 	// Start cleanup routine in background
