@@ -2,10 +2,13 @@ package handler
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"log"
 	"net/http"
+	"prosamik-backend/internal/cache"
 	"prosamik-backend/internal/repository"
 	"sort"
 	"time"
@@ -217,5 +220,59 @@ func HandleAnalyticsFilter(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Template error: %v", err)
 		http.Error(w, "Failed to render template", http.StatusInternalServerError)
 		return
+	}
+}
+
+func HandleCacheMonitoring(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	cacheStats, err := cache.GetCacheStats(r.Context())
+	if err != nil {
+		fmt.Printf("Failed to get cache stats: %v\n", err)
+		http.Error(w, "Failed to get cache statistics", http.StatusInternalServerError)
+		return
+	}
+
+	data := PageData{
+		Page: "cache-monitoring",
+		Data: cacheStats,
+	}
+
+	// Execute the base template which includes cache-monitoring
+	err = templates.ExecuteTemplate(w, "base", data) // Changed from "cache-monitoring" to "base"
+	if err != nil {
+		fmt.Printf("Template error: %v\n", err)
+		http.Error(w, "Failed to render template", http.StatusInternalServerError)
+		return
+	}
+}
+
+func HandleCacheStats(w http.ResponseWriter, r *http.Request) {
+	stats, err := cache.GetCacheStats(r.Context())
+	if err != nil {
+		fmt.Printf("Error getting cache stats: %v\n", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	data := PageData{
+		Page: "cache-monitoring",
+		Data: stats,
+	}
+
+	if r.Header.Get("HX-Request") == "true" {
+		// Only render the cache-stats section for HTMX requests
+		err = templates.ExecuteTemplate(w, "cache-stats", data.Data) // Changed to pass just the stats data
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(stats)
+	}
+
+	if err != nil {
+		fmt.Printf("Error rendering response: %v\n", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
