@@ -70,7 +70,8 @@ func constructGitHubAPIURL(githubURL string) (string, string, string, string, st
 }
 
 // processImageURLs converts relative image URLs to raw.githubusercontent.com URLs
-func processImageURLs(content, owner, repo, branch string) string {
+func processImageURLs(content, owner, repo, branch, markdownPath string) string {
+	markdownDir := filepath.Dir(markdownPath)
 	// Handle Markdown image syntax ![alt](./path)
 	mdPattern := regexp.MustCompile(`!\[(.*?)\]\((\./[^)]+)\)`)
 	content = mdPattern.ReplaceAllStringFunc(content, func(match string) string {
@@ -92,8 +93,11 @@ func processImageURLs(content, owner, repo, branch string) string {
 			}
 		}
 
+		fullPath := filepath.Join(markdownDir, relPath)
+		fullPath = filepath.ToSlash(fullPath)
+
 		rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s",
-			owner, repo, branch, relPath)
+			owner, repo, branch, fullPath)
 
 		return fmt.Sprintf("![%s](%s)", altText, rawURL)
 	})
@@ -107,9 +111,11 @@ func processImageURLs(content, owner, repo, branch string) string {
 		}
 
 		relPath := strings.TrimPrefix(parts[1], "./")
+		fullPath := filepath.Join(markdownDir, relPath)
+		fullPath = filepath.ToSlash(fullPath)
 
 		rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s",
-			owner, repo, branch, relPath)
+			owner, repo, branch, fullPath)
 
 		return strings.Replace(match, parts[1], rawURL, 1)
 	})
@@ -141,7 +147,7 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Process image URLs before converting to HTML
-	processedContent := processImageURLs(markdownContent, owner, repo, branch)
+	processedContent := processImageURLs(markdownContent, owner, repo, branch, filePath)
 
 	// Construct commits API URL and fetch last updated time
 	commitsURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/commits?path=%s&page=1&per_page=1",
