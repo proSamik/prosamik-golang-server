@@ -80,12 +80,12 @@ func (r *ProjectRepository) GetProjectByTitle(title string) (*models.Project, er
 // GetAllProjects retrieves all project posts
 func (r *ProjectRepository) GetAllProjects() ([]*models.Project, error) {
 	// Try to get from cache first
-	cached, err := cache.GetCachedContent(context.Background(), AllBlogsCacheKey)
+	cached, err := cache.GetCachedContent(context.Background(), AllProjectsCacheKey)
 	if err == nil {
 		// Cache hit
 		var projects []*models.Project
 		if err := json.Unmarshal([]byte(cached.Content), &projects); err != nil {
-			return nil, fmt.Errorf("unmarshaling cached blogs: %w", err)
+			return nil, fmt.Errorf("unmarshaling cached projects: %w", err)
 		}
 		return projects, nil
 	}
@@ -145,17 +145,17 @@ func (r *ProjectRepository) GetAllProjects() ([]*models.Project, error) {
 
 	// Cache the results
 	if err := r.cacheProjectsList(projects); err != nil {
-		fmt.Printf("Warning: failed to cache blogs: %v\n", err)
+		fmt.Printf("Warning: failed to cache projects: %v\n", err)
 	}
 
 	return projects, nil
 }
 
-// Helper function to cache blog list
+// Helper function to cache project list
 func (r *ProjectRepository) cacheProjectsList(projects []*models.Project) error {
 	projectsJSON, err := json.Marshal(projects)
 	if err != nil {
-		return fmt.Errorf("marshaling blogs: %w", err)
+		return fmt.Errorf("marshaling projects: %w", err)
 	}
 
 	return cache.SetCachedContent(context.Background(), AllProjectsCacheKey, &cache.CachedContent{
