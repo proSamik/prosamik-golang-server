@@ -33,10 +33,11 @@ func RegisterAPIRoutes() {
 	// Standard routes without rate limiting
 	// Reason: Group similar routes together for better organization
 	standardRoutes := map[string]http.HandlerFunc{
-		"/blogs":     handler.HandleBlogsList,
-		"/projects":  handler.HandleProjectsList,
-		"/md":        handler.MarkdownHandler,
-		"/analytics": handler.HandleAnalytics,
+		"/blogs":                 handler.HandleBlogsList,
+		"/projects":              handler.HandleProjectsList,
+		"/md":                    handler.MarkdownHandler,
+		"/analytics":             handler.HandleAnalytics,
+		"/analytics/cache/stats": handler.HandleCacheStats, // API endpoint
 	}
 
 	// Rate-limited routes
