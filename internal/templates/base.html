@@ -55,9 +55,9 @@
 
         <!-- Move favicon links to the end and add multiple formats -->
         <link rel="icon" href="data:,">  <!-- Clear existing favicon -->
-        <link rel="icon" href="/static/icons/favicon.svg?v=1" type="image/svg+xml">
-        <link rel="alternate icon" href="/static/icons/favicon.svg?v=1" type="image/svg+xml">
-        <link rel="shortcut icon" href="/static/icons/favicon.svg?v=1" type="image/svg+xml">
+        <link rel="icon" href="/static/icons/favicon.png?v=1" type="image/svg+xml">
+        <link rel="alternate icon" href="/static/icons/favicon.png?v=1" type="image/svg+xml">
+        <link rel="shortcut icon" href="/static/icons/favicon.png?v=1" type="image/svg+xml">
     </head>
     <body class="theme-transition dark:bg-gray-800 bg-gray-100" hx-headers='{"X-Requested-With": "XMLHttpRequest"}'>
     {{if eq .Page "login"}}
@@ -103,6 +103,8 @@
                 {{template "project-management" .}}
             {{else if eq .Page "analytics-management"}}
                 {{template "analytics-management" .}}
+            {{else if eq .Page "cache-monitoring"}}
+                {{template "cache-monitoring" .}}
             {{end}}
         </main>
     {{end}}
