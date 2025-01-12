@@ -3,6 +3,7 @@
     <html lang="en-US">
     <head>
         <title id="pageTitle">Admin Panel</title>
+        <link rel="canonical" href="https://prosamik.com" />
         <script>
             function setDomainTitle() {
                 document.getElementById('pageTitle').textContent = `${window.location.host}`;
@@ -54,10 +55,9 @@
         </style>
 
         <!-- Move favicon links to the end and add multiple formats -->
-        <link rel="icon" href="data:,">  <!-- Clear existing favicon -->
-        <link rel="icon" href="/static/icons/favicon.png?v=1" type="image/svg+xml">
-        <link rel="alternate icon" href="/static/icons/favicon.png?v=1" type="image/svg+xml">
-        <link rel="shortcut icon" href="/static/icons/favicon.png?v=1" type="image/svg+xml">
+        <link rel="icon" href="/static/icons/favicon.ico" type="image/x-icon">
+        <link rel="alternate icon" href="/static/icons/favicon.png" type="image/png" sizes="32x32">
+        <link rel="shortcut icon" href="/static/icons/favicon.png" type="image/png">
     </head>
     <body class="theme-transition dark:bg-gray-800 bg-gray-100" hx-headers='{"X-Requested-With": "XMLHttpRequest"}'>
     {{if eq .Page "login"}}
