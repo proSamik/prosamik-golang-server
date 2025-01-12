@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"prosamik-backend/internal/cache"
 	"prosamik-backend/internal/fetcher"
 	"prosamik-backend/internal/parser"
 	"prosamik-backend/pkg/models"
@@ -123,6 +124,15 @@ func processImageURLs(content, owner, repo, branch, markdownPath string) string 
 	return content
 }
 
+// getFileName gets filename of the Markdown file
+func getFileName(filePath string) string {
+	parts := strings.Split(filePath, "/")
+	if len(parts) > 0 {
+		return parts[len(parts)-1]
+	}
+	return ""
+}
+
 // MarkdownHandler processes GitHub markdown content and returns rendered HTML
 func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Query().Get("url")
@@ -131,7 +141,25 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Now getting branch name as well from the URL constructor
+	// Try to get from cache first
+	cached, err := cache.GetCachedContent(r.Context(), url)
+	if err == nil && cached != nil {
+		// Unmarshal the cached response
+		var response models.MarkdownDocument
+		if err := json.Unmarshal([]byte(cached.Content), &response); err != nil {
+			fmt.Printf("Warning: failed to unmarshal cached response: %v\n", err)
+			// Continue with normal processing since cache read failed
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				http.Error(w, "Failed to encode cached response", http.StatusInternalServerError)
+				return
+			}
+			return
+		}
+	}
+
+	// If not in cache or error, proceed with normal processing
 	apiURL, owner, repo, filePath, branch, err := constructGitHubAPIURL(url)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error constructing GitHub API URL: %v", err),
@@ -164,16 +192,51 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get the title based on URL type
+	title := repo // default title
+	if strings.Contains(url, "/blob/") || strings.Contains(url, "/tree/") {
+		title = getFileName(filePath)
+	}
+
+	// Get description from content if available
+	description := "This is the README for the repository." // default description
+	if len(markdownContent) > 0 {
+		// Take the first 200 characters, trim to last complete word
+		if len(markdownContent) > 100 {
+			description = markdownContent[:100]
+			lastSpace := strings.LastIndex(description, " ")
+			if lastSpace > 0 {
+				description = description[:lastSpace] + "..."
+			}
+		} else {
+			description = markdownContent
+		}
+	}
+
 	response := models.MarkdownDocument{
 		Content: renderedHTML,
 		//RawContent: markdownContent,
 		Metadata: models.DocumentMetadata{
-			Title:       repo,
+			Title:       title,
 			Repository:  repo,
 			LastUpdated: lastUpdated,
 			Author:      owner,
-			Description: "This is the README for the repository.",
+			Description: description,
 		},
+	}
+
+	// Cache the response before sending
+	responseBytes, err := json.Marshal(response)
+	if err != nil {
+		fmt.Printf("Warning: failed to marshal response for caching: %v\n", err)
+	} else {
+		// Store in cache
+		if err := cache.SetCachedContent(r.Context(), url, &cache.CachedContent{
+			Content:     string(responseBytes),
+			LastUpdated: lastUpdated,
+		}); err != nil {
+			fmt.Printf("Warning: failed to cache response: %v\n", err)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
