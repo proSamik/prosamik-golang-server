@@ -13,7 +13,7 @@ import (
 
 var (
 	RedisClient *redis.Client
-	TTL         = 12 * time.Hour
+	TTL         = 1 * time.Hour
 	ErrNilCache = errors.New("nil cache content")
 )
 
@@ -91,7 +91,7 @@ func testConnection() error {
 
 // startExpiryCleanup periodically scans for expired keys
 func startExpiryCleanup() {
-	ticker := time.NewTicker(6 * time.Hour)
+	ticker := time.NewTicker(2 * time.Hour)
 	defer ticker.Stop()
 
 	for range ticker.C {
