@@ -27,7 +27,7 @@ type AnalyticsManagementData struct {
 	ChartHTML string // New field for the interactive chart
 }
 
-func prepareChartData(stats map[string]map[string]int, dates []string, pages []string, colors map[string]string) string {
+func prepareChartData(stats map[string]map[string]int, dates []string) string {
 	line := charts.NewLine()
 
 	// Format dates for display
@@ -185,7 +185,7 @@ func prepareAnalyticsData(stats map[string]map[string]int) AnalyticsManagementDa
 	}
 
 	// Prepare data for the chart
-	chartHTML := prepareChartData(stats, dates, pages, colors)
+	chartHTML := prepareChartData(stats, dates)
 
 	return AnalyticsManagementData{
 		Stats:     stats,
