@@ -18,11 +18,14 @@ type Feedback struct {
 
 // HandleFeedback processes feedback submissions and sends them via SMTP
 func HandleFeedback(w http.ResponseWriter, r *http.Request) {
-	// Check for correct HTTP method
+	// Check for the correct HTTP method
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
+	// Get the site parameter from the URL
+	site := r.URL.Query().Get("site")
 
 	// Decode the JSON body to feedback struct
 	var feedback Feedback
@@ -31,14 +34,23 @@ func HandleFeedback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if required fields are empty
-	if feedback.Name == "" || feedback.Email == "" || feedback.Message == "" {
-		http.Error(w, "All fields are required", http.StatusBadRequest)
-		return
+	// Different validation logic based on site
+	if site == "githubme" {
+		// For githubme site, only email and message are required
+		if feedback.Email == "" || feedback.Message == "" {
+			http.Error(w, "Email and message are required", http.StatusBadRequest)
+			return
+		}
+	} else {
+		// For default site, all fields are required
+		if feedback.Name == "" || feedback.Email == "" || feedback.Message == "" {
+			http.Error(w, "All fields are required", http.StatusBadRequest)
+			return
+		}
 	}
 
-	// Send the feedback email
-	if err := sendFeedbackEmail(feedback); err != nil {
+	// Send the feedback email with site information
+	if err := sendFeedbackEmail(feedback, site); err != nil {
 		http.Error(w, "Failed to send feedback", http.StatusInternalServerError)
 		return
 	}
@@ -55,37 +67,46 @@ func HandleFeedback(w http.ResponseWriter, r *http.Request) {
 }
 
 // sendFeedbackEmail sends the feedback email using SMTP
-func sendFeedbackEmail(feedback Feedback) error {
+func sendFeedbackEmail(feedback Feedback, site string) error {
 	// Retrieve SMTP configuration from environment variables
-	smtpHost := os.Getenv("SMTP_HOST")                 // e.g., "smtp.gmail.com"
-	smtpPort := os.Getenv("SMTP_PORT")                 // e.g., "587"
-	smtpUser := os.Getenv("SMTP_USER")                 // Your SMTP username/email
-	smtpPassword := os.Getenv("SMTP_PASSWORD")         // Your SMTP password/app password
-	recipient := os.Getenv("FEEDBACK_RECIPIENT_EMAIL") // Feedback recipient email
+	smtpHost := os.Getenv("SMTP_HOST")
+	smtpPort := os.Getenv("SMTP_PORT")
+	smtpUser := os.Getenv("SMTP_USER")
+	smtpPassword := os.Getenv("SMTP_PASSWORD")
+	recipient := os.Getenv("FEEDBACK_RECIPIENT_EMAIL")
 
 	// Check if any of the environment variables are empty
 	if smtpHost == "" || smtpPort == "" || smtpUser == "" || smtpPassword == "" || recipient == "" {
 		return fmt.Errorf("one or more required environment variables are missing")
 	}
 
-	// Construct the email headers and body
+	// Set subject based on site
 	subject := "Feedback on prosamik.com"
+	if site == "githubme" {
+		subject = "Feedback on githubme.com"
+	}
+
+	// Construct the email headers and body
 	headers := fmt.Sprintf(
 		"From: %s\r\nTo: %s\r\nSubject: %s\r\n\r\n",
 		smtpUser, recipient, subject,
 	)
+
+	// Handle optional name field
+	nameField := "N/A"
+	if feedback.Name != "" {
+		nameField = feedback.Name
+	}
+
 	body := fmt.Sprintf(
 		"Name: %s\nEmail: %s\nMessage:\n%s",
-		feedback.Name, feedback.Email, feedback.Message,
+		nameField, feedback.Email, feedback.Message,
 	)
 
-	// Combine headers and body
+	// The Rest of the email sending logic remains the same
 	emailContent := headers + body
-
-	// Set up authentication
 	auth := smtp.PlainAuth("", smtpUser, smtpPassword, smtpHost)
 
-	// Send the email
 	err := smtp.SendMail(
 		fmt.Sprintf("%s:%s", smtpHost, smtpPort),
 		auth,
