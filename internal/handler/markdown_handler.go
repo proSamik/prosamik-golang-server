@@ -73,8 +73,10 @@ func constructGitHubAPIURL(githubURL string) (string, string, string, string, st
 // processImageURLs converts relative image URLs to raw.githubusercontent.com URLs
 func processImageURLs(content, owner, repo, branch, markdownPath string) string {
 	markdownDir := filepath.Dir(markdownPath)
-	// Handle Markdown image syntax ![alt](./path)
-	mdPattern := regexp.MustCompile(`!\[(.*?)\]\((\./[^)]+)\)`)
+
+	// Handle Markdown image syntax ![alt](path)
+	// Using simpler pattern that matches any path not starting with http:// or https://
+	mdPattern := regexp.MustCompile(`!\[(.*?)\]\(((?:\./|[^)h]|h[^t]|ht[^t]|htt[^p]|http[^:/]|https[^:/])[^)]*)\)`)
 	content = mdPattern.ReplaceAllStringFunc(content, func(match string) string {
 		parts := mdPattern.FindStringSubmatch(match)
 		if len(parts) < 3 {
@@ -82,20 +84,33 @@ func processImageURLs(content, owner, repo, branch, markdownPath string) string 
 		}
 
 		altText := parts[1]
-		relPath := strings.TrimPrefix(parts[2], "./")
+		imagePath := parts[2]
+
+		// Skip URLs that somehow matched our pattern
+		if strings.HasPrefix(imagePath, "http://") || strings.HasPrefix(imagePath, "https://") {
+			return match
+		}
+
+		// If path starts with ./, remove it and join with markdownDir
+		// Otherwise, treat it as relative to root
+		var fullPath string
+		if strings.HasPrefix(imagePath, "./") {
+			relPath := strings.TrimPrefix(imagePath, "./")
+			fullPath = filepath.Join(markdownDir, relPath)
+		} else {
+			fullPath = imagePath
+		}
+
+		fullPath = filepath.ToSlash(fullPath)
 
 		// If alt text is empty, use the last part of the path
 		if altText == "" {
-			pathParts := strings.Split(relPath, "/")
+			pathParts := strings.Split(fullPath, "/")
 			if len(pathParts) > 0 {
-				// Remove file extension for alt text
 				fileName := pathParts[len(pathParts)-1]
 				altText = strings.TrimSuffix(fileName, filepath.Ext(fileName))
 			}
 		}
-
-		fullPath := filepath.Join(markdownDir, relPath)
-		fullPath = filepath.ToSlash(fullPath)
 
 		rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s",
 			owner, repo, branch, fullPath)
@@ -103,16 +118,31 @@ func processImageURLs(content, owner, repo, branch, markdownPath string) string 
 		return fmt.Sprintf("![%s](%s)", altText, rawURL)
 	})
 
-	// Handle HTML image syntax <img src="./path" />
-	htmlPattern := regexp.MustCompile(`<img[^>]+src=["'](\./[^"']+)["']`)
+	// Handle HTML image syntax <img src="path" />
+	htmlPattern := regexp.MustCompile(`<img[^>]+src=["']((?:\./|[^"'h]|h[^t]|ht[^t]|htt[^p]|http[^:/]|https[^:/])[^"']*)["']`)
 	content = htmlPattern.ReplaceAllStringFunc(content, func(match string) string {
 		parts := htmlPattern.FindStringSubmatch(match)
 		if len(parts) < 2 {
 			return match
 		}
 
-		relPath := strings.TrimPrefix(parts[1], "./")
-		fullPath := filepath.Join(markdownDir, relPath)
+		imagePath := parts[1]
+
+		// Skip URLs that somehow matched our pattern
+		if strings.HasPrefix(imagePath, "http://") || strings.HasPrefix(imagePath, "https://") {
+			return match
+		}
+
+		// If path starts with ./, remove it and join with markdownDir
+		// Otherwise, treat it as relative to root
+		var fullPath string
+		if strings.HasPrefix(imagePath, "./") {
+			relPath := strings.TrimPrefix(imagePath, "./")
+			fullPath = filepath.Join(markdownDir, relPath)
+		} else {
+			fullPath = imagePath
+		}
+
 		fullPath = filepath.ToSlash(fullPath)
 
 		rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s",
@@ -178,11 +208,19 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 	processedContent := processImageURLs(markdownContent, owner, repo, branch, filePath)
 
 	// Construct commits API URL and fetch last updated time
-	// Construct commits API URL with branch parameter
 	commitsURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/commits?path=%s&sha=%s&page=1&per_page=1",
 		owner, repo, filePath, branch)
 	lastUpdated, err := fetcher.FetchLastCommitData(r.Context(), commitsURL)
-	if err != nil {
+	if err != nil && branch == "main" {
+		// If the main branch fails, try with "master" branch
+		masterCommitsURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/commits?path=%s&sha=%s&page=1&per_page=1",
+			owner, repo, filePath, "master")
+		lastUpdated, err = fetcher.FetchLastCommitData(r.Context(), masterCommitsURL)
+		if err != nil {
+			http.Error(w, "Failed to fetch document metadata from both main and master branches", http.StatusInternalServerError)
+			return
+		}
+	} else if err != nil {
 		http.Error(w, "Failed to fetch document metadata", http.StatusInternalServerError)
 		return
 	}
