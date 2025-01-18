@@ -92,55 +92,103 @@
                 <table class="theme-transition min-w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700">
                     <thead>
                     <tr class="bg-gray-100 dark:bg-gray-700">
-                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-left dark:text-gray-200">Date</th>
-                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200">Home</th>
-                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200">About</th>
-                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200">Blogs</th>
-                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200">Projects</th>
-                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200">Feedback</th>
-                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200">Total</th>
+                        <th scope="col" rowspan="2" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-left dark:text-gray-200">Date</th>
+                        <!-- Main pages section -->
+                        <th scope="col" colspan="5" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-center dark:text-gray-200 bg-blue-50 dark:bg-blue-900">Main Pages</th>
+                        <!-- Githubme section -->
+                        <th scope="col" colspan="3" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-center dark:text-gray-200 bg-green-50 dark:bg-green-900">Githubme Pages</th>
+                        <th scope="col" rowspan="2" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200">Total</th>
+                    </tr>
+                    <tr class="bg-gray-100 dark:bg-gray-700">
+                        <!-- Main pages columns -->
+                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200 bg-blue-50 dark:bg-blue-900">Home</th>
+                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200 bg-blue-50 dark:bg-blue-900">About</th>
+                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200 bg-blue-50 dark:bg-blue-900">Blogs</th>
+                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200 bg-blue-50 dark:bg-blue-900">Projects</th>
+                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200 bg-blue-50 dark:bg-blue-900">Feedback</th>
+                        <!-- Githubme columns -->
+                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200 bg-green-50 dark:bg-green-900">Home</th>
+                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200 bg-green-50 dark:bg-green-900">About</th>
+                        <th scope="col" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right dark:text-gray-200 bg-green-50 dark:bg-green-900">Markdown</th>
                     </tr>
                     </thead>
                     <tbody class="dark:text-gray-300">
+                    {{/* Calculate subtotals for each section */}}
+                    {{$mainTotal := 0}}
+                    {{$githubmeTotal := 0}}
                     {{$grandTotalHome := 0}}
                     {{$grandTotalAbout := 0}}
                     {{$grandTotalBlogs := 0}}
                     {{$grandTotalProjects := 0}}
                     {{$grandTotalFeedback := 0}}
+                    {{$grandTotalGithubmeHome := 0}}
+                    {{$grandTotalGithubmeAbout := 0}}
+                    {{$grandTotalGithubmeMarkdown := 0}}
                     {{$grandTotal := 0}}
 
                     {{range $date, $pageStats := $data.Stats}}
-                        {{$total := 0}}
-                        {{$total = add (index $pageStats "home") (index $pageStats "about")}}
-                        {{$total = add $total (index $pageStats "blogs")}}
-                        {{$total = add $total (index $pageStats "projects")}}
-                        {{$total = add $total (index $pageStats "feedback")}}
+                        {{/* Calculate section totals */}}
+                        {{$mainSectionTotal := 0}}
+                        {{$githubmeSectionTotal := 0}}
 
+                        {{$mainSectionTotal = add (index $pageStats "home") (index $pageStats "about")}}
+                        {{$mainSectionTotal = add $mainSectionTotal (index $pageStats "blogs")}}
+                        {{$mainSectionTotal = add $mainSectionTotal (index $pageStats "projects")}}
+                        {{$mainSectionTotal = add $mainSectionTotal (index $pageStats "feedback")}}
+
+                        {{$githubmeSectionTotal = add (index $pageStats "githubme_home") (index $pageStats "githubme_about")}}
+                        {{$githubmeSectionTotal = add $githubmeSectionTotal (index $pageStats "githubme_markdown")}}
+
+                        {{$total := add $mainSectionTotal $githubmeSectionTotal}}
+
+                        <tr class="theme-transition hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600">{{formatDate $date}}</td>
+                            <!-- Main pages data -->
+                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-blue-50/30 dark:bg-blue-900/30">{{index $pageStats "home"}}</td>
+                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-blue-50/30 dark:bg-blue-900/30">{{index $pageStats "about"}}</td>
+                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-blue-50/30 dark:bg-blue-900/30">{{index $pageStats "blogs"}}</td>
+                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-blue-50/30 dark:bg-blue-900/30">{{index $pageStats "projects"}}</td>
+                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-blue-50/30 dark:bg-blue-900/30">{{index $pageStats "feedback"}}</td>
+                            <!-- Githubme data -->
+                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-green-50/30 dark:bg-green-900/30">{{index $pageStats "githubme_home"}}</td>
+                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-green-50/30 dark:bg-green-900/30">{{index $pageStats "githubme_about"}}</td>
+                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-green-50/30 dark:bg-green-900/30">{{index $pageStats "githubme_markdown"}}</td>
+                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right font-medium">{{$total}}</td>
+                        </tr>
+
+                        {{/* Update grand totals */}}
+                        {{$mainTotal = add $mainTotal $mainSectionTotal}}
+                        {{$githubmeTotal = add $githubmeTotal $githubmeSectionTotal}}
                         {{$grandTotalHome = add $grandTotalHome (index $pageStats "home")}}
                         {{$grandTotalAbout = add $grandTotalAbout (index $pageStats "about")}}
                         {{$grandTotalBlogs = add $grandTotalBlogs (index $pageStats "blogs")}}
                         {{$grandTotalProjects = add $grandTotalProjects (index $pageStats "projects")}}
                         {{$grandTotalFeedback = add $grandTotalFeedback (index $pageStats "feedback")}}
-                        {{$grandTotal = add $grandTotal $total}}
-
-                        <tr class="theme-transition hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600">{{formatDate $date}}</td>
-                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right">{{index $pageStats "home"}}</td>
-                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right">{{index $pageStats "about"}}</td>
-                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right">{{index $pageStats "blogs"}}</td>
-                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right">{{index $pageStats "projects"}}</td>
-                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right">{{index $pageStats "feedback"}}</td>
-                            <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right font-medium">{{$total}}</td>
-                        </tr>
+                        {{$grandTotalGithubmeHome = add $grandTotalGithubmeHome (index $pageStats "githubme_home")}}
+                        {{$grandTotalGithubmeAbout = add $grandTotalGithubmeAbout (index $pageStats "githubme_about")}}
+                        {{$grandTotalGithubmeMarkdown = add $grandTotalGithubmeMarkdown (index $pageStats "githubme_markdown")}}
                     {{end}}
+                    {{$grandTotal = add $mainTotal $githubmeTotal}}
+
+                    <!-- Section Totals Row -->
+                    <tr class="theme-transition bg-gray-100 dark:bg-gray-700 font-medium dark:text-white">
+                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600">Section Totals</td>
+                        <td colspan="5" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-blue-50 dark:bg-blue-900">{{$mainTotal}}</td>
+                        <td colspan="3" class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-green-50 dark:bg-green-900">{{$githubmeTotal}}</td>
+                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right">{{$grandTotal}}</td>
+                    </tr>
+
                     <!-- Grand Total Row -->
                     <tr class="theme-transition bg-gray-50 dark:bg-gray-700 font-semibold dark:text-white">
-                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600">Total</td>
-                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right">{{$grandTotalHome}}</td>
-                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right">{{$grandTotalAbout}}</td>
-                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right">{{$grandTotalBlogs}}</td>
-                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right">{{$grandTotalProjects}}</td>
-                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right">{{$grandTotalFeedback}}</td>
+                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600">Detailed Totals</td>
+                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-blue-50/30 dark:bg-blue-900/30">{{$grandTotalHome}}</td>
+                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-blue-50/30 dark:bg-blue-900/30">{{$grandTotalAbout}}</td>
+                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-blue-50/30 dark:bg-blue-900/30">{{$grandTotalBlogs}}</td>
+                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-blue-50/30 dark:bg-blue-900/30">{{$grandTotalProjects}}</td>
+                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-blue-50/30 dark:bg-blue-900/30">{{$grandTotalFeedback}}</td>
+                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-green-50/30 dark:bg-green-900/30">{{$grandTotalGithubmeHome}}</td>
+                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-green-50/30 dark:bg-green-900/30">{{$grandTotalGithubmeAbout}}</td>
+                        <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right bg-green-50/30 dark:bg-green-900/30">{{$grandTotalGithubmeMarkdown}}</td>
                         <td class="py-2 px-4 border-b border-gray-300 dark:border-gray-600 text-right">{{$grandTotal}}</td>
                     </tr>
                     </tbody>

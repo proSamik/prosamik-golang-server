@@ -27,7 +27,7 @@ type AnalyticsManagementData struct {
 	ChartHTML string // New field for the interactive chart
 }
 
-func prepareChartData(stats map[string]map[string]int, dates []string, pages []string, colors map[string]string) string {
+func prepareChartData(stats map[string]map[string]int, dates []string) string {
 	line := charts.NewLine()
 
 	// Format dates for display
@@ -67,22 +67,53 @@ func prepareChartData(stats map[string]map[string]int, dates []string, pages []s
 
 	line.SetXAxis(formattedDates)
 
-	// Add data series
-	for _, page := range pages {
-		var values []opts.LineData
-		for _, date := range dates {
-			values = append(values, opts.LineData{
-				Value: stats[date][page],
-			})
-		}
+	// Define the pages in groups
+	pageGroups := map[string][]struct {
+		key   string // key in stats map
+		name  string // display name
+		color string // line color
+	}{
+		"Main": {
+			{key: "home", name: "Home", color: "#3b82f6"},         // blue
+			{key: "about", name: "About", color: "#10b981"},       // green
+			{key: "blogs", name: "Blogs", color: "#f59e0b"},       // yellow
+			{key: "projects", name: "Projects", color: "#ef4444"}, // red
+			{key: "feedback", name: "Feedback", color: "#8b5cf6"}, // purple
+		},
+		"Githubme": {
+			{key: "githubme_home", name: "Githubme Home", color: "#6366f1"},         // indigo
+			{key: "githubme_about", name: "Githubme About", color: "#ec4899"},       // pink
+			{key: "githubme_markdown", name: "Githubme Markdown", color: "#14b8a6"}, // teal
+		},
+	}
 
-		line.AddSeries(page, values).
-			SetSeriesOptions(
-				charts.WithLineChartOpts(opts.LineChart{}),
+	// Add series for each group
+	for groupName, pages := range pageGroups {
+		for _, page := range pages {
+			var values []opts.LineData
+			for _, date := range dates {
+				values = append(values, opts.LineData{
+					Value: stats[date][page.key],
+				})
+			}
+
+			// Configure line style based on the group
+			lineStyle := opts.LineStyle{
+				Width: 2,
+			}
+			if groupName == "Githubme" {
+				lineStyle.Type = "dashed"
+			}
+
+			// Add series with options
+			series := line.AddSeries(page.name, values)
+			series.SetSeriesOptions(
+				charts.WithLineStyleOpts(lineStyle),
 				charts.WithItemStyleOpts(opts.ItemStyle{
-					Color: colors[page],
+					Color: page.color,
 				}),
 			)
+		}
 	}
 
 	// Render to HTML
@@ -96,38 +127,65 @@ func prepareChartData(stats map[string]map[string]int, dates []string, pages []s
 }
 
 func prepareAnalyticsData(stats map[string]map[string]int) AnalyticsManagementData {
-	colors := map[string]string{
-		"home":     "#3b82f6",
-		"about":    "#10b981",
-		"blogs":    "#f59e0b",
-		"projects": "#ef4444",
-		"feedback": "#8b5cf6",
+	// Define page groups
+	pageGroups := map[string][]string{
+		"Main": {
+			"home", "about", "blogs", "projects", "feedback",
+		},
+		"Githubme": {
+			"githubme_home", "githubme_about", "githubme_markdown",
+		},
 	}
 
+	// Define colors by group
+	colors := map[string]string{
+		// Main pages
+		"home":     "#3b82f6", // blue
+		"about":    "#10b981", // green
+		"blogs":    "#f59e0b", // yellow
+		"projects": "#ef4444", // red
+		"feedback": "#8b5cf6", // purple
+
+		// Githubme pages (using a different color palette)
+		"githubme_home":     "#6366f1", // indigo
+		"githubme_about":    "#ec4899", // pink
+		"githubme_markdown": "#14b8a6", // teal
+	}
+
+	// Get and sort dates
 	dates := make([]string, 0, len(stats))
 	for date := range stats {
 		dates = append(dates, date)
 	}
 	sort.Strings(dates)
 
-	pages := []string{"home", "about", "blogs", "projects", "feedback"}
+	// Combine all pages while maintaining group order
+	var pages []string
+	for _, groupPages := range pageGroups {
+		pages = append(pages, groupPages...)
+	}
 
+	// Calculate line data and max value
 	lineData := make(map[string][]int)
 	maxValue := 0
 
-	for _, page := range pages {
-		values := make([]int, len(dates))
-		for i, date := range dates {
-			value := stats[date][page]
-			values[i] = value
-			if value > maxValue {
-				maxValue = value
+	// Calculate by group for better organization
+	for _, groupPages := range pageGroups {
+		for _, page := range groupPages {
+			values := make([]int, len(dates))
+			for i, date := range dates {
+				value := stats[date][page]
+				values[i] = value
+				if value > maxValue {
+					maxValue = value
+				}
 			}
+			lineData[page] = values
 		}
-		lineData[page] = values
 	}
 
-	chartHTML := prepareChartData(stats, dates, pages, colors)
+	// Prepare data for the chart
+	chartHTML := prepareChartData(stats, dates)
 
 	return AnalyticsManagementData{
 		Stats:     stats,

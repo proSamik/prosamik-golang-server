@@ -78,11 +78,14 @@ func (h *AnalyticsHandlerInterface) handleContentAnalytics(w http.ResponseWriter
 // Helper functions
 func (h *AnalyticsHandlerInterface) isValidPage(page string) bool {
 	validPages := map[string]bool{
-		"home":     true,
-		"about":    true,
-		"blogs":    true,
-		"projects": true,
-		"feedback": true,
+		"home":              true,
+		"about":             true,
+		"blogs":             true,
+		"projects":          true,
+		"feedback":          true,
+		"githubme_home":     true,
+		"githubme_about":    true,
+		"githubme_markdown": true,
 	}
 	return validPages[strings.ToLower(page)]
 }

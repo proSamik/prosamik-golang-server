@@ -63,6 +63,30 @@ func (r *AnalyticsRepository) IncrementPageViewCount(page string) error {
             DO UPDATE SET 
                 feedback_views = analytics.feedback_views + 1,
                 updated_at = CURRENT_TIMESTAMP`
+	case "githubme_home":
+		query = `
+            INSERT INTO analytics (date, githubme_home, updated_at)
+            VALUES ($1, 1, CURRENT_TIMESTAMP)
+            ON CONFLICT (date) 
+            DO UPDATE SET 
+                githubme_home = analytics.githubme_home + 1,
+                updated_at = CURRENT_TIMESTAMP`
+	case "githubme_about":
+		query = `
+            INSERT INTO analytics (date, githubme_about, updated_at)
+            VALUES ($1, 1, CURRENT_TIMESTAMP)
+            ON CONFLICT (date) 
+            DO UPDATE SET 
+                githubme_about = analytics.githubme_about + 1,
+                updated_at = CURRENT_TIMESTAMP`
+	case "githubme_markdown":
+		query = `
+            INSERT INTO analytics (date, githubme_markdown, updated_at)
+            VALUES ($1, 1, CURRENT_TIMESTAMP)
+            ON CONFLICT (date) 
+            DO UPDATE SET 
+                githubme_markdown = analytics.githubme_markdown + 1,
+                updated_at = CURRENT_TIMESTAMP`
 	default:
 		return fmt.Errorf("invalid page type: %s", page)
 	}
@@ -90,7 +114,8 @@ func (r *AnalyticsRepository) IncrementPageViewCount(page string) error {
 
 func (r *AnalyticsRepository) GetAnalytics(startDate, endDate string) (map[string]map[string]int, error) {
 	query := `
-        SELECT date, home_views, about_views, blogs_views, projects_views, feedback_views 
+        SELECT date, home_views, about_views, blogs_views, projects_views, feedback_views,
+               githubme_home, githubme_about, githubme_markdown 
         FROM analytics 
         WHERE date BETWEEN $1 AND $2
         ORDER BY date DESC
@@ -125,19 +150,24 @@ func (r *AnalyticsRepository) GetAnalytics(startDate, endDate string) (map[strin
 	for rows.Next() {
 		var date time.Time
 		var home, about, blogs, projects, feedback int
+		var githubmeHome, githubmeAbout, githubmeMarkdown int
 
-		err := rows.Scan(&date, &home, &about, &blogs, &projects, &feedback)
+		err := rows.Scan(&date, &home, &about, &blogs, &projects, &feedback,
+			&githubmeHome, &githubmeAbout, &githubmeMarkdown)
 		if err != nil {
 			return nil, fmt.Errorf("scan error: %w", err)
 		}
 
 		dateStr := date.Format("2006-01-02")
 		stats[dateStr] = map[string]int{
-			"home":     home,
-			"about":    about,
-			"blogs":    blogs,
-			"projects": projects,
-			"feedback": feedback,
+			"home":              home,
+			"about":             about,
+			"blogs":             blogs,
+			"projects":          projects,
+			"feedback":          feedback,
+			"githubme_home":     githubmeHome,
+			"githubme_about":    githubmeAbout,
+			"githubme_markdown": githubmeMarkdown,
 		}
 	}
 
