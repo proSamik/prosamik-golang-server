@@ -178,8 +178,9 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 	processedContent := processImageURLs(markdownContent, owner, repo, branch, filePath)
 
 	// Construct commits API URL and fetch last updated time
-	commitsURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/commits?path=%s&page=1&per_page=1",
-		owner, repo, filePath)
+	// Construct commits API URL with branch parameter
+	commitsURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/commits?path=%s&sha=%s&page=1&per_page=1",
+		owner, repo, filePath, branch)
 	lastUpdated, err := fetcher.FetchLastCommitData(r.Context(), commitsURL)
 	if err != nil {
 		http.Error(w, "Failed to fetch document metadata", http.StatusInternalServerError)
