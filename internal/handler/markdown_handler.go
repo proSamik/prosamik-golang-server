@@ -92,13 +92,14 @@ func processImageURLs(content, owner, repo, branch, markdownPath string) string 
 		}
 
 		// If path starts with ./, remove it and join with markdownDir
-		// Otherwise, treat it as relative to root
+		// Otherwise, treat it as relative to markdown directory
 		var fullPath string
 		if strings.HasPrefix(imagePath, "./") {
 			relPath := strings.TrimPrefix(imagePath, "./")
 			fullPath = filepath.Join(markdownDir, relPath)
 		} else {
-			fullPath = imagePath
+			// For paths not starting with ./, treat them relative to markdown directory
+			fullPath = filepath.Join(markdownDir, imagePath)
 		}
 
 		fullPath = filepath.ToSlash(fullPath)
@@ -134,13 +135,14 @@ func processImageURLs(content, owner, repo, branch, markdownPath string) string 
 		}
 
 		// If path starts with ./, remove it and join with markdownDir
-		// Otherwise, treat it as relative to root
+		// Otherwise, treat it as relative to markdown directory
 		var fullPath string
 		if strings.HasPrefix(imagePath, "./") {
 			relPath := strings.TrimPrefix(imagePath, "./")
 			fullPath = filepath.Join(markdownDir, relPath)
 		} else {
-			fullPath = imagePath
+			// For paths not starting with ./, treat them relative to markdown directory
+			fullPath = filepath.Join(markdownDir, imagePath)
 		}
 
 		fullPath = filepath.ToSlash(fullPath)
@@ -161,6 +163,12 @@ func getFileName(filePath string) string {
 		return parts[len(parts)-1]
 	}
 	return ""
+}
+
+// Fix relative path resolution in image URLs
+func processImageURL(url string) string {
+	// Remove any ../ from the URL path
+	return strings.ReplaceAll(url, "/../", "/")
 }
 
 // MarkdownHandler processes GitHub markdown content and returns rendered HTML
