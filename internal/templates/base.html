@@ -13,6 +13,8 @@
         <script src="https://cdn.tailwindcss.com"></script>
         <script src="https://unpkg.com/htmx.org@1.9.10"></script>
         <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+        <!-- Chart.js for analytics -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
         <!-- Tailwind Configuration -->
         <script>
             tailwind.config = {
@@ -105,6 +107,8 @@
                 {{template "analytics-management" .}}
             {{else if eq .Page "cache-monitoring"}}
                 {{template "cache-monitoring" .}}
+            {{else if eq .Page "repo-view-analytics"}}
+                {{template "repo-view-analytics" .}}
             {{end}}
         </main>
     {{end}}
