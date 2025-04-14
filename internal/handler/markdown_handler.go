@@ -165,12 +165,6 @@ func getFileName(filePath string) string {
 	return ""
 }
 
-// Fix relative path resolution in image URLs
-func processImageURL(url string) string {
-	// Remove any ../ from the URL path
-	return strings.ReplaceAll(url, "/../", "/")
-}
-
 // MarkdownHandler processes GitHub markdown content and returns rendered HTML
 func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Query().Get("url")
