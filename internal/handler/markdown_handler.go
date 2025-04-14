@@ -8,6 +8,7 @@ import (
 	"prosamik-backend/internal/cache"
 	"prosamik-backend/internal/fetcher"
 	"prosamik-backend/internal/parser"
+	"prosamik-backend/internal/repository"
 	"prosamik-backend/pkg/models"
 	"regexp"
 	"strings"
@@ -165,12 +166,6 @@ func getFileName(filePath string) string {
 	return ""
 }
 
-// Fix relative path resolution in image URLs
-func processImageURL(url string) string {
-	// Remove any ../ from the URL path
-	return strings.ReplaceAll(url, "/../", "/")
-}
-
 // MarkdownHandler processes GitHub markdown content and returns rendered HTML
 func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Query().Get("url")
@@ -188,6 +183,9 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("Warning: failed to unmarshal cached response: %v\n", err)
 			// Continue with normal processing since cache read failed
 		} else {
+			// Record the view even when serving from cache
+			recordRepoView(url)
+
 			w.Header().Set("Content-Type", "application/json")
 			if err := json.NewEncoder(w).Encode(response); err != nil {
 				http.Error(w, "Failed to encode cached response", http.StatusInternalServerError)
@@ -272,6 +270,9 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
+	// Record the view in the database
+	recordRepoView(url)
+
 	// Cache the response before sending
 	responseBytes, err := json.Marshal(response)
 	if err != nil {
@@ -290,4 +291,15 @@ func MarkdownHandler(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
+}
+
+// recordRepoView records a view for the given repository URL
+func recordRepoView(repoURL string) {
+	// Run in a goroutine to not block the response
+	go func() {
+		repo := repository.NewRepoViewRepository()
+		if err := repo.RecordView(repoURL); err != nil {
+			fmt.Printf("Warning: failed to record repo view: %v\n", err)
+		}
+	}()
 }

@@ -19,4 +19,7 @@ func SetupRoutes() {
 
 	// Register Analytics Management routes
 	RegisterAnalyticsManagementRoutes()
+
+	// Register Repository View routes
+	RegisterRepoViewRoutes()
 }

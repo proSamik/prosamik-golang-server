@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"prosamik-backend/internal/auth"
+	"sort"
 	"time"
 )
 
@@ -49,6 +50,14 @@ var templates = template.Must(template.New("").Funcs(template.FuncMap{
 		}
 		// Format as "02-Jan-06" (which will give us dd-MMM-yy)
 		return t.Format("02-Jan-06")
+	},
+	"sortedMapKeys": func(m map[string]map[string]int) []string {
+		keys := make([]string, 0, len(m))
+		for k := range m {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		return keys
 	},
 }).ParseGlob("internal/templates/*.html"))
 
